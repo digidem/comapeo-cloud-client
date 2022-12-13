@@ -1,0 +1,23 @@
+{
+  "name": "mapeo-cloud-sync",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "brittle tests/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digidem/mapeo-cloud-sync.git"
+  },
+  "author": "Digital Democracy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/digidem/mapeo-cloud-sync/issues"
+  },
+  "homepage": "https://github.com/digidem/mapeo-cloud-sync#readme",
+  "dependencies": {
+    "@mapeo/core": "github:digidem/mapeo-core-next#authstore",
+    "fastify": "^4.10.2"
+  }
+}
