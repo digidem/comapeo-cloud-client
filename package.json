@@ -1,23 +1,30 @@
 {
-  "name": "mapeo-cloud-sync",
-  "version": "0.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "brittle tests/*.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/digidem/mapeo-cloud-sync.git"
-  },
-  "author": "Digital Democracy",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/digidem/mapeo-cloud-sync/issues"
-  },
-  "homepage": "https://github.com/digidem/mapeo-cloud-sync#readme",
-  "dependencies": {
-    "@mapeo/core": "github:digidem/mapeo-core-next#authstore",
-    "fastify": "^4.10.2"
-  }
+	"name": "mapeo-cloud",
+	"version": "0.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "brittle tests/*.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/digidem/mapeo-cloud.git"
+	},
+	"author": "Digital Democracy",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/digidem/mapeo-cloud/issues"
+	},
+	"homepage": "https://github.com/digidem/mapeo-cloud#readme",
+	"dependencies": {
+		"@mapeo/core": "github:digidem/mapeo-core-next#authstore",
+		"better-sqlite3": "^8.0.1",
+		"corestore": "^6.4.0",
+		"desm": "^1.3.0",
+		"env-schema": "^5.2.0"
+	},
+	"devDependencies": {
+		"brittle": "^3.1.1"
+	}
 }

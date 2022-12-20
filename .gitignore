@@ -3,3 +3,5 @@ node_modules
 *.log
 .tmp
 tmp
+keypair.json
+.env
