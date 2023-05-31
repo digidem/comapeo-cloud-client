@@ -27,14 +27,18 @@ export class MapeoCloud {
         return validate({ dotenvFilepath, schema })
     }
 
-    handle(conn, req) {
+    /**
+     * @type {import('@fastify/websocket').WebsocketHandler}
+     */
+    sync(conn, _) {
       conn.pipe(conn)
-      // conn.socket.on('message', console.log)
+      // conn.pipe(this.mapeo.getReplicationStream()).pipe(conn)
+      conn.socket.on('message', console.log)
     }
 
 
     async start () {
         await this.mapeo.ready()
-        await api.start(this.handle)
+        await api.start(this.sync)
     }
 }
