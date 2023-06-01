@@ -3,6 +3,7 @@ import * as path from 'path'
 import * as fs from 'fs/promises'
 
 import Corestore from 'corestore'
+import SecretStream from '@hyperswarm/secret-stream'
 import Sqlite from 'better-sqlite3'
 import { Mapeo } from '@mapeo/core'
 import * as api from './lib/api.js'
@@ -30,10 +31,10 @@ export class MapeoCloud {
     /**
      * @type {import('@fastify/websocket').WebsocketHandler}
      */
-    sync(conn, _) {
-      conn.pipe(conn)
-      // conn.pipe(this.mapeo.getReplicationStream()).pipe(conn)
-      conn.socket.on('message', console.log)
+    sync(wss, _) {
+      const noiseStream = new SecretStream()
+      noiseStream.pipe(wss).pipe(noiseStream)
+      // this.mapeo.coreManager.replicate(noiseStream)
     }
 
 

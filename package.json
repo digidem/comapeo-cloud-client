@@ -19,6 +19,7 @@
 	"homepage": "https://github.com/digidem/mapeo-cloud#readme",
 	"dependencies": {
 		"@fastify/websocket": "^8.1.0",
+		"@hyperswarm/secret-stream": "^6.1.2",
 		"@mapeo/core": "github:digidem/mapeo-core-next",
 		"better-sqlite3": "^8.0.1",
 		"corestore": "^6.4.0",
