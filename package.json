@@ -7,15 +7,31 @@
     "mapeo-server": "src/bin/mapeo-server.js"
   },
   "type": "module",
+  "files": [
+    "Dockerfile",
+    "fly.toml",
+    "src/**/*.js",
+    "dist/**/*.d.ts",
+    "comapeo-core-2.0.1.tgz"
+  ],
+  "exports": {
+    "types": "./dist/app.d.ts",
+    "import": "./src/app.js"
+  },
   "scripts": {
+    "start": "node src/server.js",
+    "build:clean": "rm -rf dist",
+    "build:typescript": "tsc --project ./tsconfig.build.json",
+    "build": "npm-run-all --serial build:clean build:typescript",
     "format": "prettier --write .",
     "test:prettier": "prettier --check .",
     "test:eslint": "eslint .",
-    "test:typescript": "tsc",
+    "test:typescript": "tsc --project ./tsconfig.dev.json",
     "test:node": "node --test",
     "test": "npm-run-all --aggregate-output --print-label --parallel test:*",
-    "watch:typescript": "tsc --watch",
-    "prepare": "husky"
+    "watch:typescript": "tsc --watch --project ./tsconfig.dev.json",
+    "prepare": "husky || true",
+    "prepack": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -28,22 +44,32 @@
   },
   "homepage": "https://github.com/digidem/comapeo-cloud#readme",
   "devDependencies": {
+    "@comapeo/schema": "^1.2.0",
     "@eslint/js": "^9.13.0",
+    "@mapeo/mock-data": "^2.1.1",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/node": "^22.8.4",
+    "@types/ws": "^8.5.12",
     "eslint": "^9.13.0",
     "globals": "^15.11.0",
     "husky": "^9.1.6",
+    "iterpal": "^0.4.0",
     "lint-staged": "^15.2.10",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.3",
     "random-access-memory": "^6.2.1",
+    "streamx": "^2.20.1",
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "@comapeo/core": "^2.0.1",
+    "@comapeo/core": "^2.1.0",
     "@fastify/sensible": "^5.6.0",
+    "@fastify/websocket": "^10.0.1",
+    "@mapeo/crypto": "^1.0.0-alpha.10",
     "@sinclair/typebox": "^0.33.17",
-    "fastify": "^4.28.1"
+    "env-schema": "^6.0.0",
+    "fastify": "^4.28.1",
+    "string-timing-safe-equal": "^0.1.0",
+    "ws": "^8.18.0"
   }
 }
