@@ -12,6 +12,7 @@
     "test:prettier": "prettier --check .",
     "test:eslint": "eslint .",
     "test:typescript": "tsc",
+    "test:node": "node --test",
     "test": "npm-run-all --aggregate-output --print-label --parallel test:*",
     "watch:typescript": "tsc --watch",
     "prepare": "husky"
