@@ -1,1 +1,1 @@
-# mapeo-cloud
+# @comapeo/cloud

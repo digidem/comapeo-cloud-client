@@ -1,5 +1,5 @@
 {
-  "name": "mapeo-cloud",
+  "name": "@comapeo/cloud",
   "version": "0.0.0",
   "description": "",
   "main": "src/main.js",
@@ -18,14 +18,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/digidem/mapeo-cloud.git"
+    "url": "git+https://github.com/digidem/comapeo-cloud.git"
   },
   "author": "Digital Democracy",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/digidem/mapeo-cloud/issues"
+    "url": "https://github.com/digidem/comapeo-cloud/issues"
   },
-  "homepage": "https://github.com/digidem/mapeo-cloud#readme",
+  "homepage": "https://github.com/digidem/comapeo-cloud#readme",
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
