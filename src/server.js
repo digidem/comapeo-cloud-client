@@ -1,4 +1,4 @@
-import { MapeoManager } from '@mapeo/core'
+import { MapeoManager } from '@comapeo/core'
 import Fastify from 'fastify'
 import RAM from 'random-access-memory'
 
