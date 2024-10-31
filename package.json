@@ -1,7 +1,7 @@
 {
   "name": "@comapeo/cloud",
   "version": "0.0.0",
-  "description": "",
+  "description": "self-hosted cloud server for CoMapeo",
   "main": "src/main.js",
   "type": "module",
   "files": [
