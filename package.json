@@ -8,8 +8,7 @@
     "Dockerfile",
     "fly.toml",
     "src/**/*.js",
-    "dist/**/*.d.ts",
-    "comapeo-core-2.0.1.tgz"
+    "dist/**/*.d.ts"
   ],
   "exports": {
     "types": "./dist/app.d.ts",
