@@ -6,6 +6,7 @@ import timingSafeEqual from 'string-timing-safe-equal'
 import assert from 'node:assert/strict'
 import * as fs from 'node:fs'
 
+import * as schemas from './schemas.js'
 import { wsCoreReplicator } from './ws-core-replicator.js'
 
 /** @import { FastifyInstance, FastifyPluginAsync, FastifyRequest, RawServerDefault } from 'fastify' */
@@ -13,8 +14,6 @@ import { wsCoreReplicator } from './ws-core-replicator.js'
 
 const BEARER_SPACE_LENGTH = 'Bearer '.length
 
-const HEX_REGEX_32_BYTES = '^[0-9a-fA-F]{64}$'
-const HEX_STRING_32_BYTES = Type.String({ pattern: HEX_REGEX_32_BYTES })
 const BASE32_REGEX_32_BYTES = '^[0-9A-Za-z]{52}$'
 const BASE32_STRING_32_BYTES = Type.String({ pattern: BASE32_REGEX_32_BYTES })
 
@@ -116,21 +115,11 @@ export default async function routes(
     '/projects',
     {
       schema: {
-        body: Type.Object({
-          projectName: Type.String({ minLength: 1 }),
-          projectKey: HEX_STRING_32_BYTES,
-          encryptionKeys: Type.Object({
-            auth: HEX_STRING_32_BYTES,
-            config: HEX_STRING_32_BYTES,
-            data: HEX_STRING_32_BYTES,
-            blobIndex: HEX_STRING_32_BYTES,
-            blob: HEX_STRING_32_BYTES,
-          }),
-        }),
+        body: schemas.projectToAdd,
         response: {
           200: Type.Object({
             data: Type.Object({
-              deviceId: HEX_STRING_32_BYTES,
+              deviceId: schemas.HEX_STRING_32_BYTES,
             }),
           }),
           400: { $ref: 'HttpError' },
@@ -262,38 +251,7 @@ export default async function routes(
         }),
         response: {
           200: Type.Object({
-            data: Type.Array(
-              Type.Object({
-                docId: Type.String(),
-                createdAt: Type.String(),
-                updatedAt: Type.String(),
-                deleted: Type.Boolean(),
-                lat: Type.Optional(Type.Number()),
-                lon: Type.Optional(Type.Number()),
-                attachments: Type.Array(
-                  Type.Object({
-                    url: Type.String(),
-                  }),
-                ),
-                tags: Type.Record(
-                  Type.String(),
-                  Type.Union([
-                    Type.Boolean(),
-                    Type.Number(),
-                    Type.String(),
-                    Type.Null(),
-                    Type.Array(
-                      Type.Union([
-                        Type.Boolean(),
-                        Type.Number(),
-                        Type.String(),
-                        Type.Null(),
-                      ]),
-                    ),
-                  ]),
-                ),
-              }),
-            ),
+            data: Type.Array(schemas.observationToAdd),
           }),
           403: { $ref: 'HttpError' },
           404: { $ref: 'HttpError' },
