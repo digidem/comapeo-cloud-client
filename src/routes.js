@@ -251,7 +251,7 @@ export default async function routes(
         }),
         response: {
           200: Type.Object({
-            data: Type.Array(schemas.observationToAdd),
+            data: Type.Array(schemas.observationResult),
           }),
           403: { $ref: 'HttpError' },
           404: { $ref: 'HttpError' },

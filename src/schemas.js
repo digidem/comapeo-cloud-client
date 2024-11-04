@@ -19,7 +19,7 @@ export const projectToAdd = Type.Object({
   }),
 })
 
-export const observationToAdd = Type.Object({
+export const observationResult = Type.Object({
   docId: Type.String(),
   createdAt: dateTimeString,
   updatedAt: dateTimeString,
