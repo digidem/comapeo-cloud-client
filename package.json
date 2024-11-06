@@ -25,7 +25,8 @@
     "test:typescript": "tsc --project ./tsconfig.dev.json",
     "test:node": "node --test",
     "test": "npm-run-all --aggregate-output --print-label --parallel test:*",
-    "watch:typescript": "tsc --watch --project ./tsconfig.dev.json",
+    "watch:test:typescript": "tsc --watch --project ./tsconfig.dev.json",
+    "watch:test:node": "npm run test:node -- --watch",
     "prepare": "husky || true",
     "prepack": "npm run build"
   },
