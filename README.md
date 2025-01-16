@@ -40,3 +40,118 @@ To destroy the app (delete all data and project invites), run:
 ```sh
 flyctl destroy --app <your-app-name>
 ```
+
+## Usage
+
+### API Examples
+
+All API requests require a Bearer token that matches the `SERVER_BEARER_TOKEN` environment variable.
+
+In the examples below, replace `<SERVER_BEARER_TOKEN>` with your actual token, `<yourserver.com>` with your server's address, and provide the necessary data for each request.
+
+#### Add a Project
+
+To add a new project to the server, send a POST request to `/projects` with the project details.
+
+```bash
+curl -X PUT https://yourserver.com/projects \
+  -H "Authorization: Bearer <SERVER_BEARER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectName": "Your Project Name",
+    "projectKey": "<hex-encoded project key>",
+    "encryptionKeys": {
+      "auth": "<hex-encoded auth key>",
+      "config": "<hex-encoded config key>",
+      "data": "<hex-encoded data key>",
+      "blobIndex": "<hex-encoded blobIndex key>",
+      "blob": "<hex-encoded blob key>"
+    }
+  }'
+```
+
+#### Get Projects
+
+```bash
+curl \
+  -H 'Authorization: Bearer <SERVER_BEARER_TOKEN>' \
+  'https://yourserver.com/projects'
+```
+
+#### Create an Observation
+
+Add a new observation to a project by sending a POST request to `/projects/:projectPublicId/observations` with the observation data.
+
+```bash
+curl -X PUT https://yourserver.com/projects/<projectPublicId>/observations \
+  -H "Authorization: Bearer <SERVER_BEARER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "lat": <latitude>,
+    "lon": <longitude>,
+    "attachments": [
+      {
+        "driveDiscoveryId": "<driveDiscoveryId>",
+        "type": "photo",
+        "name": "<filename>"
+      }
+    ],
+    "tags": ["tag1", "tag2"]
+  }'
+```
+
+#### Get Observations
+
+Retrieve observations for a project by sending a GET request to `/projects/:projectPublicId/observations`.
+
+```bash
+curl -X GET https://yourserver.com/projects/<projectPublicId>/observations \
+  -H "Authorization: Bearer <SERVER_BEARER_TOKEN>"
+```
+
+Replace `<projectPublicId>` with the public ID of your project.
+
+#### Get an Attachment
+
+Fetch an attachment associated with an observation.
+
+```bash
+curl -X GET "https://yourserver.com/projects/<projectPublicId>/attachments/<driveDiscoveryId>/<type>/<name>?variant=<variant>" \
+  -H "Authorization: Bearer <SERVER_BEARER_TOKEN>"
+```
+
+- Replace `<projectPublicId>` with your project's public ID.
+- Replace `<driveDiscoveryId>` with the drive discovery ID of the attachment.
+- Replace `<type>` with the attachment type (`photo` or `audio`).
+- Replace `<name>` with the attachment file name.
+- `<variant>` is optional and can be `original`, `preview`, or `thumbnail` for photos. For audio, only `original` is valid.
+
+#### Create a Remote Alert
+
+Send a POST request to `/projects/:projectPublicId/remoteDetectionAlerts` with the alert data.
+
+```bash
+curl -X POST https://yourserver.com/projects/<projectPublicId>/remoteDetectionAlerts \
+  -H "Authorization: Bearer <SERVER_BEARER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "detectionDateStart": "<ISO timestamp>",
+    "detectionDateEnd": "<ISO timestamp>",
+    "sourceId": "<source id>",
+    "metadata": {
+      "alert_type": "<alert type>"
+    },
+    "geometry": {
+      "type": "Point",
+      "coordinates": [<longitude>, <latitude>]
+    }
+  }'
+```
+
+#### Healthcheck
+
+Check the health of the server by making a GET request to `/healthcheck`. This endpoint does not require authentication.
+
+```bash
+curl -X GET https://yourserver.com/healthcheck
+```
