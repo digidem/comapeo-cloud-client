@@ -321,6 +321,52 @@ export default async function routes(
     },
   )
 
+  fastify.put(
+    '/projects/:projectPublicId/observation',
+    {
+      schema: {
+        params: Type.Object({
+          projectPublicId: BASE32_STRING_32_BYTES,
+        }),
+        body: schemas.observationToAdd,
+        response: {
+          201: Type.Literal(''),
+          '4xx': schemas.errorResponse,
+        },
+      },
+      async preHandler(req) {
+        verifyBearerAuth(req)
+        await ensureProjectExists(this, req)
+      },
+    },
+    /**
+     * @this {FastifyInstance}
+     */
+    async function (req, reply) {
+      const { projectPublicId } = req.params
+      const project = await this.comapeo.getProject(projectPublicId)
+      const observationData = {
+        schemaName: 'observation',
+        ...req.body,
+        attachments: req.body.attachments || [],
+        tags: req.body.tags || {},
+        metadata: req.body.metadata || {
+          manualLocation: false,
+          position: {
+            mocked: false,
+            timestamp: new Date().toISOString(),
+            coords: {
+              latitude: req.body.lat,
+              longitude: req.body.lon,
+            },
+          },
+        },
+      }
+      await project.observation.create(observationData)
+      reply.status(201).send()
+    },
+  )
+
   fastify.post(
     '/projects/:projectPublicId/remoteDetectionAlerts',
     {

@@ -26,6 +26,37 @@ export const projectToAdd = Type.Object({
   }),
 })
 
+export const observationToAdd = Type.Object({
+  lat: latitude,
+  lon: longitude,
+  attachments: Type.Optional(
+    Type.Array(
+      Type.Object({
+        url: Type.String(),
+      }),
+    ),
+  ),
+  tags: Type.Optional(
+    Type.Record(
+      Type.String(),
+      Type.Union([
+        Type.Boolean(),
+        Type.Number(),
+        Type.String(),
+        Type.Null(),
+        Type.Array(
+          Type.Union([
+            Type.Boolean(),
+            Type.Number(),
+            Type.String(),
+            Type.Null(),
+          ]),
+        ),
+      ]),
+    ),
+  ),
+})
+
 export const observationResult = Type.Object({
   docId: Type.String(),
   createdAt: dateTimeString,
