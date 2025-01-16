@@ -32,7 +32,9 @@ export const observationToAdd = Type.Object({
   attachments: Type.Optional(
     Type.Array(
       Type.Object({
-        url: Type.String(),
+        driveDiscoveryId: Type.String(),
+        type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
+        name: Type.String(),
       }),
     ),
   ),
@@ -54,6 +56,19 @@ export const observationToAdd = Type.Object({
         ),
       ]),
     ),
+  ),
+  metadata: Type.Optional(
+    Type.Object({
+      manualLocation: Type.Boolean(),
+      position: Type.Object({
+        mocked: Type.Boolean(),
+        timestamp: Type.String(),
+        coords: Type.Object({
+          latitude: Type.Number(),
+          longitude: Type.Number(),
+        }),
+      }),
+    }),
   ),
 })
 
