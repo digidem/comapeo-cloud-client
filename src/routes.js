@@ -346,9 +346,12 @@ export default async function routes(
       const { projectPublicId } = req.params
       const project = await this.comapeo.getProject(projectPublicId)
       const observationData = {
-        schemaName: 'observation',
+        schemaName: /** @type {const} */ ('observation'),
         ...req.body,
-        attachments: req.body.attachments || [],
+        attachments: (req.body.attachments || []).map((attachment) => ({
+          ...attachment,
+          hash: '', // Required by schema but not used
+        })),
         tags: req.body.tags || {},
         metadata: req.body.metadata || {
           manualLocation: false,
