@@ -4,6 +4,7 @@ import { Type } from '@sinclair/typebox'
 import timingSafeEqual from 'string-timing-safe-equal'
 
 import assert from 'node:assert/strict'
+import { randomBytes } from 'node:crypto'
 import * as fs from 'node:fs'
 import { STATUS_CODES } from 'node:http'
 
@@ -147,6 +148,7 @@ export default async function routes(
           200: Type.Object({
             data: Type.Object({
               deviceId: schemas.HEX_STRING_32_BYTES,
+              projectId: schemas.HEX_STRING_32_BYTES,
             }),
           }),
           400: schemas.errorResponse,
@@ -158,7 +160,9 @@ export default async function routes(
      */
     async function (req) {
       const { projectName } = req.body
-      const projectKey = Buffer.from(req.body.projectKey, 'hex')
+      const projectKey = req.body.projectKey
+        ? Buffer.from(req.body.projectKey, 'hex')
+        : randomBytes(32)
       const projectPublicId = projectKeyToPublicId(projectKey)
 
       const existingProjects = await this.comapeo.listProjects()
@@ -207,16 +211,24 @@ export default async function routes(
       }
 
       if (!alreadyHasThisProject) {
+        const encryptionKeys = req.body.encryptionKeys || {
+          auth: randomBytes(32).toString('hex'),
+          config: randomBytes(32).toString('hex'),
+          data: randomBytes(32).toString('hex'),
+          blobIndex: randomBytes(32).toString('hex'),
+          blob: randomBytes(32).toString('hex'),
+        }
+
         const projectId = await this.comapeo.addProject(
           {
             projectKey,
             projectName,
             encryptionKeys: {
-              auth: Buffer.from(req.body.encryptionKeys.auth, 'hex'),
-              config: Buffer.from(req.body.encryptionKeys.config, 'hex'),
-              data: Buffer.from(req.body.encryptionKeys.data, 'hex'),
-              blobIndex: Buffer.from(req.body.encryptionKeys.blobIndex, 'hex'),
-              blob: Buffer.from(req.body.encryptionKeys.blob, 'hex'),
+              auth: Buffer.from(encryptionKeys.auth, 'hex'),
+              config: Buffer.from(encryptionKeys.config, 'hex'),
+              data: Buffer.from(encryptionKeys.data, 'hex'),
+              blobIndex: Buffer.from(encryptionKeys.blobIndex, 'hex'),
+              blob: Buffer.from(encryptionKeys.blob, 'hex'),
             },
           },
           { waitForSync: false },
@@ -230,10 +242,10 @@ export default async function routes(
 
       const project = await this.comapeo.getProject(projectPublicId)
       project.$sync.start()
-
       return {
         data: {
           deviceId: this.comapeo.deviceId,
+          projectId: projectPublicId,
         },
       }
     },

@@ -36,19 +36,6 @@ test('request with empty project name', async (t) => {
   assert.equal(response.json().error.code, 'BAD_REQUEST')
 })
 
-test('request missing project key', async (t) => {
-  const server = createTestServer(t)
-
-  const response = await server.inject({
-    method: 'PUT',
-    url: '/projects',
-    body: omit(randomAddProjectBody(), 'projectKey'),
-  })
-
-  assert.equal(response.statusCode, 400)
-  assert.equal(response.json().error.code, 'BAD_REQUEST')
-})
-
 test("request with a project key that's too short", async (t) => {
   const server = createTestServer(t)
 
@@ -56,19 +43,6 @@ test("request with a project key that's too short", async (t) => {
     method: 'PUT',
     url: '/projects',
     body: { ...randomAddProjectBody(), projectKey: randomHex(31) },
-  })
-
-  assert.equal(response.statusCode, 400)
-  assert.equal(response.json().error.code, 'BAD_REQUEST')
-})
-
-test('request missing any encryption keys', async (t) => {
-  const server = createTestServer(t)
-
-  const response = await server.inject({
-    method: 'PUT',
-    url: '/projects',
-    body: omit(randomAddProjectBody(), 'encryptionKeys'),
   })
 
   assert.equal(response.statusCode, 400)
@@ -120,7 +94,10 @@ test('adding a project', async (t) => {
 
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), {
-    data: { deviceId: server.deviceId },
+    data: {
+      deviceId: server.deviceId,
+      projectId: response.json().data.projectId,
+    },
   })
 })
 
@@ -220,4 +197,20 @@ test('adding the same project twice is idempotent', async (t) => {
     body,
   })
   assert.equal(secondResponse.statusCode, 200)
+})
+
+test('adding a project with only projectName generates random keys', async (t) => {
+  const server = createTestServer(t)
+  const projectName = 'Test Project'
+
+  const response = await server.inject({
+    method: 'PUT',
+    url: '/projects',
+    body: { projectName },
+  })
+
+  assert.equal(response.statusCode, 200)
+  const { data } = response.json()
+  assert.ok(data.deviceId, 'Response includes deviceId')
+  assert.ok(data.projectId, 'Response includes generated projectId')
 })

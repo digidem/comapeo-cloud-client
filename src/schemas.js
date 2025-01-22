@@ -16,14 +16,16 @@ export const errorResponse = Type.Object({
 
 export const projectToAdd = Type.Object({
   projectName: Type.String({ minLength: 1 }),
-  projectKey: HEX_STRING_32_BYTES,
-  encryptionKeys: Type.Object({
-    auth: HEX_STRING_32_BYTES,
-    config: HEX_STRING_32_BYTES,
-    data: HEX_STRING_32_BYTES,
-    blobIndex: HEX_STRING_32_BYTES,
-    blob: HEX_STRING_32_BYTES,
-  }),
+  projectKey: Type.Optional(HEX_STRING_32_BYTES),
+  encryptionKeys: Type.Optional(
+    Type.Object({
+      auth: HEX_STRING_32_BYTES,
+      config: HEX_STRING_32_BYTES,
+      data: HEX_STRING_32_BYTES,
+      blobIndex: HEX_STRING_32_BYTES,
+      blob: HEX_STRING_32_BYTES,
+    }),
+  ),
 })
 
 export const observationToAdd = Type.Object({
