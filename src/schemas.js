@@ -102,7 +102,7 @@ export const observationResult = Type.Object({
 
 const position = Type.Tuple([longitude, latitude])
 
-export const remoteDetectionAlertToAdd = Type.Object({
+const remoteDetectionAlertCommon = {
   detectionDateStart: dateTimeString,
   detectionDateEnd: dateTimeString,
   sourceId: Type.String({ minLength: 1 }),
@@ -146,4 +146,16 @@ export const remoteDetectionAlertToAdd = Type.Object({
       ),
     }),
   ]),
+}
+
+export const remoteDetectionAlertToAdd = Type.Object({
+  ...remoteDetectionAlertCommon,
+})
+
+export const remoteDetectionAlertResult = Type.Object({
+  docId: Type.String(),
+  createdAt: dateTimeString,
+  updatedAt: dateTimeString,
+  deleted: Type.Boolean(),
+  ...remoteDetectionAlertCommon,
 })
