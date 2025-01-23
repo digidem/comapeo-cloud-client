@@ -405,7 +405,14 @@ export default async function routes(
      */
     async function (req, reply) {
       const { projectPublicId } = req.params
-      const project = await this.comapeo.getProject(projectPublicId)
+      console.log('projectPublicId', projectPublicId)
+      let project
+      try {
+        project = await this.comapeo.getProject(projectPublicId)
+      } catch (e) {
+        console.error(e)
+        throw e
+      }
 
       await project.remoteDetectionAlert.create({
         schemaName: 'remoteDetectionAlert',
@@ -525,7 +532,11 @@ async function ensureProjectExists(fastify, req) {
   try {
     await fastify.comapeo.getProject(req.params.projectPublicId)
   } catch (e) {
-    if (e instanceof Error && e.message.startsWith('NotFound')) {
+    if (
+      e instanceof Error &&
+      // TODO: Add a better way to check for this error in @comapeo/core
+      (e.message.startsWith('NotFound') || e.message.match(/not found/iu))
+    ) {
       throw errors.projectNotFoundError()
     }
     throw e
