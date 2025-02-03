@@ -1,7 +1,6 @@
 // @ts-check
 import { keyToPublicId as projectKeyToPublicId } from '@mapeo/crypto'
 import { Type } from '@sinclair/typebox'
-import fp from 'fastify-plugin'
 import timingSafeEqual from 'string-timing-safe-equal'
 
 import assert from 'node:assert/strict'
@@ -9,27 +8,23 @@ import { randomBytes } from 'node:crypto'
 
 import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
-import { SUPPORTED_ATTACHMENT_TYPES } from './constants.js'
-import { ensureProjectExists, verifyBearerAuth } from './utils.js'
+import { verifyBearerAuth } from './utils.js'
+
+/** @typedef {import('fastify').FastifyInstance} FastifyInstance */
+/** @typedef {import('fastify').FastifyPluginAsync} FastifyPluginAsync */
+/** @typedef {import('fastify').FastifyRequest} FastifyRequest */
+/** @typedef {import('fastify').RawServerDefault} RawServerDefault */
+/** @typedef {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} ProjectRequest */
 
 /**
- * Plugin options.
- * @typedef {Object} ProjectsPluginOptions
- * @property {string} [serverBearerToken]
- * @property {string} [serverName]
- * @property {number|string[]} [allowedProjects]
+ * @typedef {object} RouteOptions
+ * @prop {string} serverBearerToken
+ * @prop {string} serverName
+ * @prop {undefined | number | string[]} [allowedProjects=1]
  */
 
-/**
- * Handles /projects endpoints:
- * - GET /projects
- * - PUT /projects
- * - GET /projects/:projectPublicId/attachments/:driveDiscoveryId/:type/:name
- *
- * @param {import('fastify').FastifyInstance} fastify Fastify instance.
- * @param {ProjectsPluginOptions} opts Plugin options.
- */
-async function projectsRoutes(fastify, opts) {
+/** @type {import('fastify').FastifyPluginAsync<RouteOptions>} */
+export default async function projectsRoutes(fastify, opts) {
   const { serverBearerToken, serverName, allowedProjects = 1 } = opts
   const allowedProjectsSetOrNumber = Array.isArray(allowedProjects)
     ? new Set(allowedProjects)
@@ -52,16 +47,11 @@ async function projectsRoutes(fastify, opts) {
           '4xx': schemas.errorResponse,
         },
       },
-      preHandler: (req, _reply, done) => {
+      async preHandler(req) {
         verifyBearerAuth(req, serverBearerToken)
-        done()
       },
     },
-    /**
-     * @param {import('fastify').FastifyRequest} _req
-     * @param {import('fastify').FastifyReply} _reply
-     */
-    async function handler(_req, _reply) {
+    async () => {
       const projects = await fastify.comapeo.listProjects()
       return {
         data: projects.map((p) => ({ projectId: p.projectId, name: p.name })),
@@ -85,18 +75,16 @@ async function projectsRoutes(fastify, opts) {
           400: schemas.errorResponse,
         },
       },
-      preHandler: (req, _reply, done) => {
+      async preHandler(req) {
         verifyBearerAuth(req, serverBearerToken)
-        done()
       },
     },
-    /**
-     * @param {import('fastify').FastifyRequest} req
-     * @param {import('fastify').FastifyReply} _reply
-     */
-    async function handler(req, _reply) {
-      const projectKey = req.body.projectKey
-        ? Buffer.from(req.body.projectKey, 'hex')
+    async (req) => {
+      const body = /** @type {import('../schemas.js').ProjectToAdd} */ (
+        req.body
+      )
+      const projectKey = body.projectKey
+        ? Buffer.from(body.projectKey, 'hex')
         : randomBytes(32)
       const projectPublicId = projectKeyToPublicId(projectKey)
       const existingProjects = await fastify.comapeo.listProjects()
@@ -131,7 +119,7 @@ async function projectsRoutes(fastify, opts) {
         })
       }
       if (!alreadyHasThisProject) {
-        const encryptionKeys = req.body.encryptionKeys || {
+        const encryptionKeys = body.encryptionKeys || {
           auth: randomBytes(32).toString('hex'),
           config: randomBytes(32).toString('hex'),
           data: randomBytes(32).toString('hex'),
@@ -141,7 +129,7 @@ async function projectsRoutes(fastify, opts) {
         const projectId = await fastify.comapeo.addProject(
           {
             projectKey,
-            projectName: req.body.projectName,
+            projectName: body.projectName,
             encryptionKeys: {
               auth: Buffer.from(encryptionKeys.auth, 'hex'),
               config: Buffer.from(encryptionKeys.config, 'hex'),
@@ -168,87 +156,4 @@ async function projectsRoutes(fastify, opts) {
       }
     },
   )
-
-  // GET attachments
-  fastify.get(
-    '/projects/:projectPublicId/attachments/:driveDiscoveryId/:type/:name',
-    {
-      schema: {
-        params: Type.Object({
-          projectPublicId: schemas.HEX_STRING_32_BYTES,
-          driveDiscoveryId: Type.String(),
-          type: Type.Union(
-            [...SUPPORTED_ATTACHMENT_TYPES].map((attachmentType) =>
-              Type.Literal(attachmentType),
-            ),
-          ),
-          name: Type.String(),
-        }),
-        querystring: Type.Object({
-          variant: Type.Optional(
-            Type.Union([
-              Type.Literal('original'),
-              Type.Literal('preview'),
-              Type.Literal('thumbnail'),
-            ]),
-          ),
-        }),
-        response: {
-          200: {},
-          '4xx': schemas.errorResponse,
-        },
-      },
-      preHandler: async (req) => {
-        verifyBearerAuth(req, serverBearerToken)
-        await ensureProjectExists(
-          fastify,
-          /** @type {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} */ (
-            req
-          ),
-        )
-      },
-    },
-    /**
-     * @param {import('fastify').FastifyRequest} req
-     * @param {import('fastify').FastifyReply} reply
-     */
-    async function handler(req, reply) {
-      const project = await fastify.comapeo.getProject(
-        req.params.projectPublicId,
-      )
-      let typeAndVariant
-      switch (req.params.type) {
-        case 'photo':
-          typeAndVariant = {
-            type: 'photo',
-            variant: req.query.variant || 'original',
-          }
-          break
-        case 'audio':
-          if (req.query.variant && req.query.variant !== 'original') {
-            throw errors.badRequestError(
-              'Cannot fetch this variant for audio attachments',
-            )
-          }
-          typeAndVariant = { type: 'audio', variant: 'original' }
-          break
-        default:
-          throw errors.shouldBeImpossibleError(req.params.type)
-      }
-      const blobId = {
-        driveId: req.params.driveDiscoveryId,
-        name: req.params.name,
-        ...typeAndVariant,
-      }
-      const blobUrl = await project.$blobs.getUrl(blobId)
-      const proxiedResponse = await fetch(blobUrl)
-      reply.code(proxiedResponse.status)
-      for (const [headerName, headerValue] of proxiedResponse.headers) {
-        reply.header(headerName, headerValue)
-      }
-      return reply.send(proxiedResponse.body)
-    },
-  )
 }
-
-export default fp(projectsRoutes, { name: 'projectsRoutes' })

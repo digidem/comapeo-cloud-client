@@ -58,7 +58,7 @@ test('returns a 404 if trying to add alerts to a non-existent project', async (t
     method: 'POST',
     url: `/projects/${randomProjectPublicId()}/remoteDetectionAlerts`,
     headers: {
-      Authorization: 'Bearer ' + BEARER_TOKEN,
+      Authorization: `Bearer ${BEARER_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(generateAlert()),

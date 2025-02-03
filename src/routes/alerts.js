@@ -10,7 +10,6 @@ import { ensureProjectExists, verifyBearerAuth } from './utils.js'
  * @prop {string} serverName
  * @prop {undefined | number | string[]} [allowedProjects=1]
  */
-
 /** @type {import('fastify').FastifyPluginAsync<RouteOptions>} */
 export default async function alertRoutes(fastify, { serverBearerToken }) {
   fastify.get(
@@ -49,12 +48,9 @@ export default async function alertRoutes(fastify, { serverBearerToken }) {
         )
       },
     },
-    /**
-     * @this {import('fastify').FastifyInstance}
-     */
-    async function (req) {
+    async (req) => {
       const { projectPublicId } = /** @type {any} */ (req.params)
-      const project = await this.comapeo.getProject(projectPublicId)
+      const project = await fastify.comapeo.getProject(projectPublicId)
 
       return {
         data: (

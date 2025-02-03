@@ -1,5 +1,7 @@
 import { Type } from '@sinclair/typebox'
 
+import { BASE32_STRING_32_BYTES } from './routes/constants.js'
+
 const HEX_REGEX_32_BYTES = '^[0-9a-fA-F]{64}$'
 export const HEX_STRING_32_BYTES = Type.String({ pattern: HEX_REGEX_32_BYTES })
 
@@ -14,6 +16,7 @@ export const errorResponse = Type.Object({
   }),
 })
 
+/** @type {import('@sinclair/typebox').TObject} */
 export const projectToAdd = Type.Object({
   projectName: Type.String({ minLength: 1 }),
   projectKey: Type.Optional(HEX_STRING_32_BYTES),
@@ -28,6 +31,10 @@ export const projectToAdd = Type.Object({
   ),
 })
 
+/** @typedef {import('./types/project.js').ProjectToAdd} ProjectToAdd */
+
+/** @typedef {import('@sinclair/typebox').Static<typeof observationToAdd>} ObservationToAdd */
+/** @typedef {{driveDiscoveryId: string, type: 'photo'|'audio', name: string, hash?: string}} Attachment */
 export const observationToAdd = Type.Object({
   lat: latitude,
   lon: longitude,
@@ -71,6 +78,24 @@ export const observationToAdd = Type.Object({
         }),
       }),
     }),
+  ),
+})
+
+export const attachmentParams = Type.Object({
+  projectPublicId: BASE32_STRING_32_BYTES,
+  driveDiscoveryId: Type.String(),
+  type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
+  name: Type.String(),
+})
+
+/** @typedef {import('@sinclair/typebox').Static<typeof attachmentQuerystring>} AttachmentQuerystring */
+export const attachmentQuerystring = Type.Object({
+  variant: Type.Optional(
+    Type.Union([
+      Type.Literal('original'),
+      Type.Literal('preview'),
+      Type.Literal('thumbnail'),
+    ]),
   ),
 })
 
