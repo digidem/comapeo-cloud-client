@@ -20,16 +20,25 @@ export default async function syncRoutes(fastify) {
         },
       },
       async preHandler(req) {
-        await ensureProjectExists(this, req)
+        await ensureProjectExists(
+          this,
+          /** @type {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} */ (
+            req
+          ),
+        )
       },
       websocket: true,
     },
     /**
-     * @this {FastifyInstance}
+     * @this {import('fastify').FastifyInstance}
      */
     async function (socket, req) {
       // The preValidation hook ensures that the project exists
-      const project = await this.comapeo.getProject(req.params.projectPublicId)
+      const project = await this.comapeo.getProject(
+        /** @type {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} */ (
+          req
+        ).params.projectPublicId,
+      )
       const replicationStream = replicateProject(project, false)
       wsCoreReplicator(socket, replicationStream)
       project.$sync.start()
