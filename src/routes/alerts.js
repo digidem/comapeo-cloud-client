@@ -1,10 +1,8 @@
 import { Type } from '@sinclair/typebox'
 
 import * as schemas from '../schemas.js'
+import { BASE32_STRING_32_BYTES } from './constants.js'
 import { ensureProjectExists, verifyBearerAuth } from './utils.js'
-
-const BASE32_REGEX_32_BYTES = '^[0-9A-Za-z]{52}$'
-const BASE32_STRING_32_BYTES = Type.String({ pattern: BASE32_REGEX_32_BYTES })
 
 /**
  * @typedef {object} RouteOptions
@@ -43,7 +41,12 @@ export default async function alertRoutes(fastify, { serverBearerToken }) {
       },
       async preHandler(req) {
         verifyBearerAuth(req, serverBearerToken)
-        await ensureProjectExists(fastify, req)
+        await ensureProjectExists(
+          fastify,
+          /** @type {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} */ (
+            req
+          ),
+        )
       },
     },
     /**
@@ -86,27 +89,31 @@ export default async function alertRoutes(fastify, { serverBearerToken }) {
       },
       async preHandler(req) {
         verifyBearerAuth(req, serverBearerToken)
-        await ensureProjectExists(fastify, req)
+        await ensureProjectExists(
+          fastify,
+          /** @type {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} */ (
+            req
+          ),
+        )
       },
     },
     /**
      * @this {import('fastify').FastifyInstance}
      */
-    async function (req, reply) {
+    async function (req) {
       const { projectPublicId } = /** @type {any} */ (req.params)
       const project = await this.comapeo.getProject(projectPublicId)
 
       try {
-        await project.remoteDetectionAlert.create({
+        const response = await project.remoteDetectionAlert.create({
           schemaName: 'remoteDetectionAlert',
           .../** @type {any} */ (req.body),
         })
+        return response
       } catch (err) {
         console.error('Failed to create remote detection alert:', err)
         throw err
       }
-
-      reply.status(201).send()
     },
   )
 }

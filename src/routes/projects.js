@@ -200,7 +200,12 @@ async function projectsRoutes(fastify, opts) {
       },
       preHandler: async (req) => {
         verifyBearerAuth(req, serverBearerToken)
-        await ensureProjectExists(fastify, req)
+        await ensureProjectExists(
+          fastify,
+          /** @type {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} */ (
+            req
+          ),
+        )
       },
     },
     /**
