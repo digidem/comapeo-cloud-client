@@ -80,6 +80,40 @@ const fastify = createFastify({
   logger: true,
   trustProxy: true,
 })
+
+// Register Swagger
+await fastify.register(import('@fastify/swagger'), {
+  swagger: {
+    info: {
+      title: 'Mapeo Cloud API',
+      description: 'API documentation for Mapeo Cloud Server',
+      version: '1.0.0',
+    },
+    host: `localhost:${config.PORT}`,
+    schemes: ['http', 'https'],
+    consumes: ['application/json'],
+    produces: ['application/json'],
+    securityDefinitions: {
+      bearerAuth: {
+        type: 'apiKey',
+        name: 'Authorization',
+        in: 'header',
+        description:
+          'Enter the token with the `Bearer: ` prefix, e.g. "Bearer abcde12345"',
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  exposeRoute: true,
+})
+await fastify.register(import('@fastify/swagger-ui'), {
+  routePrefix: '/docs',
+})
+
 fastify.register(comapeoServer, {
   serverName: config.SERVER_NAME,
   serverBearerToken: config.SERVER_BEARER_TOKEN,
@@ -91,7 +125,23 @@ fastify.register(comapeoServer, {
   clientMigrationsFolder,
 })
 
-fastify.get('/healthcheck', async () => {})
+fastify.get(
+  '/healthcheck',
+  {
+    schema: {
+      description: 'Healthcheck endpoint',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            status: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+  async () => ({ status: 'ok' }),
+)
 
 try {
   await fastify.listen({ port: config.PORT, host: '0.0.0.0' })
