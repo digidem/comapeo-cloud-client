@@ -114,9 +114,6 @@ export default async function projectsRoutes(fastify, opts) {
           400: schemas.errorResponse,
         },
       },
-      async preHandler(req) {
-        verifyBearerAuth(req, serverBearerToken)
-      },
     },
     async (req) => {
       const body = /** @type {ProjectToAdd} */ (req.body)
