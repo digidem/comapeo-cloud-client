@@ -40,7 +40,6 @@ jobs:
 
   deploy:
     needs: test
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +53,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image for main branch
+        if: github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -62,3 +62,13 @@ jobs:
           tags: |
             communityfirst/comape-cloud-client:latest
             communityfirst/comape-cloud-client:${{ github.sha }}
+
+      - name: Build and push Docker image for other branches
+        if: github.ref != 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            communityfirst/comape-cloud-client:${{ github.sha }}
+            communityfirst/comape-cloud-client:${{ github.ref_name }}
