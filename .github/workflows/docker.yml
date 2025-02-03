@@ -33,9 +33,10 @@ jobs:
 
       - name: Test application health
         run: |
-          docker run -d -p 3000:3000 --name test-container test-image:${{ github.sha }}
+          docker run -d -p 8080:8080 -e SERVER_BEARER_TOKEN=test-token -e ALLOWED_PROJECTS=1000 --name test-container test-image:${{ github.sha }}
           sleep 5
-          curl -f http://localhost:3000/ || (docker logs test-container && exit 1)
+          chmod +x ./test/test_script.sh
+          ./test/test_script.sh test-token || (docker logs test-container && exit 1)
 
   deploy:
     needs: test
