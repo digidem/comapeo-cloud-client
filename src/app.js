@@ -5,11 +5,11 @@ import createFastifyPlugin from 'fastify-plugin'
 import allowedHostsPlugin from './allowed-hosts-plugin.js'
 import baseUrlPlugin from './base-url-plugin.js'
 import comapeoPlugin from './comapeo-plugin.js'
-import routes from './routes.js'
+import routes from './routes/index.js'
 
 /** @import { FastifyPluginAsync } from 'fastify' */
 /** @import { ComapeoPluginOptions } from './comapeo-plugin.js' */
-/** @import { RouteOptions } from './routes.js' */
+/** @import { RouteOptions } from './routes/index.js' */
 
 /**
  * @internal
