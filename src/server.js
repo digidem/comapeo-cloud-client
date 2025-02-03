@@ -82,6 +82,7 @@ const fastify = createFastify({
 })
 
 // Register Swagger
+// @ts-ignore
 await fastify.register(import('@fastify/swagger'), {
   swagger: {
     info: {
@@ -110,6 +111,7 @@ await fastify.register(import('@fastify/swagger'), {
   },
   exposeRoute: true,
 })
+// @ts-ignore
 await fastify.register(import('@fastify/swagger-ui'), {
   routePrefix: '/docs',
 })

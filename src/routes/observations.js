@@ -177,6 +177,7 @@ export default async function observationRoutes(
 
         const proxiedResponse = await fetch(blobUrl)
         reply.code(proxiedResponse.status)
+        // @ts-ignore
         for (const [headerName, headerValue] of proxiedResponse.headers) {
           reply.header(headerName, headerValue)
         }
