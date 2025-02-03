@@ -1,5 +1,5 @@
 {
-  "name": "@comapeo/cloud",
+  "name": "@comapeo/cloud-client",
   "version": "0.1.0",
   "description": "self-hosted cloud server for CoMapeo",
   "main": "src/main.js",
@@ -15,6 +15,7 @@
     "import": "./src/app.js"
   },
   "scripts": {
+    "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "build:clean": "rm -rf dist",
     "build:typescript": "tsc --project ./tsconfig.build.json",
@@ -53,6 +54,7 @@
     "husky": "^9.1.6",
     "iterpal": "^0.4.0",
     "lint-staged": "^15.2.10",
+    "nodemon": "^3.1.9",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.3",
     "random-access-memory": "^6.2.1",

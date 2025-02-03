@@ -7,7 +7,7 @@ FROM node:${NODE_VERSION} AS build
 RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
 WORKDIR /usr/src/app
 COPY package*.json /usr/src/app/
-RUN npm ci --omit=dev
+RUN npm install && npm prune --omit=dev
 
 # --------------> The production image__
 FROM node:${NODE_VERSION}-bullseye-slim
