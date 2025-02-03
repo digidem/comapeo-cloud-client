@@ -2,6 +2,17 @@
 # Usage: ./test_script.sh <bearer_token>
 # Example: ./test_script.sh test-token
 
+# Default values and constants
+HOST="http://localhost:8080"
+PROJECT_1_NAME="My Test Project 1"
+PROJECT_1_KEY="b277874b88825d52236022768afb98f9e2585082522d2d1289d94dcdadcd322f"
+PROJECT_2_NAME="My Test Project 2"
+PROJECT_2_KEY="c277874b88825d52236022768afb98f9e2585082522d2d1289d94dcdadcd322f"
+ENCRYPTION_KEY="ed6f980d737748a6b1e00bbe25c9e6a68abe4a5b69943ab4cc7de7d44457111f"
+DETECTION_START="2023-01-01T00:00:00.000Z"
+DETECTION_END="2023-01-02T00:00:00.000Z"
+TEST_SOURCE_ID="test-source"
+
 # Exit on error
 set -e
 
@@ -11,8 +22,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Default values
-HOST="http://localhost:8080"
 BEARER_TOKEN="$1"
 
 echo "🧪 Starting API Tests..."
@@ -42,14 +51,14 @@ RESPONSE=$(curl -s -f -X PUT \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{
-        "projectName": "My Test Project 1",
-        "projectKey": "b277874b88825d52236022768afb98f9e2585082522d2d1289d94dcdadcd322f",
+        "projectName": "'"${PROJECT_1_NAME}"'",
+        "projectKey": "'"${PROJECT_1_KEY}"'",
         "encryptionKeys": {
-            "auth": "ed6f980d737748a6b1e00bbe25c9e6a68abe4a5b69943ab4cc7de7d44457111f",
-            "config": "ed6f980d737748a6b1e00bbe25c9e6a68abe4a5b69943ab4cc7de7d44457111f",
-            "data": "ed6f980d737748a6b1e00bbe25c9e6a68abe4a5b69943ab4cc7de7d44457111f", 
-            "blobIndex": "ed6f980d737748a6b1e00bbe25c9e6a68abe4a5b69943ab4cc7de7d44457111f",
-            "blob": "ed6f980d737748a6b1e00bbe25c9e6a68abe4a5b69943ab4cc7de7d44457111f"
+            "auth": "'"${ENCRYPTION_KEY}"'",
+            "config": "'"${ENCRYPTION_KEY}"'",
+            "data": "'"${ENCRYPTION_KEY}"'",
+            "blobIndex": "'"${ENCRYPTION_KEY}"'",
+            "blob": "'"${ENCRYPTION_KEY}"'"
         }
     }' \
     "${HOST}/projects") || (echo "❌ Failed" && exit 1)
@@ -65,8 +74,61 @@ echo "Response: ${RESPONSE}"
 echo "✅ Passed"
 echo
 
+# Test PUT /projects with QR code
+echo "PUT /projects with QR code"
+echo "-------------------------"
+RESPONSE=$(curl -s -f -X PUT \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "projectName": "'"${PROJECT_2_NAME}"'",
+        "projectKey": "'"${PROJECT_2_KEY}"'",
+        "encryptionKeys": {
+            "auth": "'"${ENCRYPTION_KEY}"'",
+            "config": "'"${ENCRYPTION_KEY}"'",
+            "data": "'"${ENCRYPTION_KEY}"'",
+            "blobIndex": "'"${ENCRYPTION_KEY}"'",
+            "blob": "'"${ENCRYPTION_KEY}"'"
+        }
+    }' \
+    "${HOST}/projects?qr=true") || (echo "❌ Failed" && exit 1)
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Test GET /projects with QR code
+echo "GET /projects with QR code"
+echo "-------------------------"
+RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects?qr=true")
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Get first project's ID and name for subsequent tests
+FIRST_PROJECT_ID=$(echo "${RESPONSE}" | jq -r '.data[0].projectId')
+FIRST_PROJECT_NAME=$(echo "${RESPONSE}" | jq -r '.data[0].name')
+
+# Test GET /projects with projectId filter
+echo "GET /projects with projectId filter"
+echo "---------------------------------"
+RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects?projectId=${FIRST_PROJECT_ID}")
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Test GET /projects with name filter
+# URL encode the project name for use in query parameter
+ENCODED_PROJECT_NAME=$(printf '%s' "${FIRST_PROJECT_NAME}" | jq -sRr @uri)
+echo "Using encoded project name: ${ENCODED_PROJECT_NAME}"
+
+echo "GET /projects with name filter ${FIRST_PROJECT_NAME}"
+echo "----------------------------"
+RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects?name=${ENCODED_PROJECT_NAME}")
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
 # Save project ID for subsequent tests
-PROJECT_ID=$(echo "${RESPONSE}" | jq -r '.data[0].projectId')
+PROJECT_ID=${FIRST_PROJECT_ID}
 echo "Using project ID: ${PROJECT_ID}"
 echo
 
@@ -103,9 +165,9 @@ RESPONSE=$(curl -s -f -X POST \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{
-        "detectionDateStart": "2023-01-01T00:00:00.000Z",
-        "detectionDateEnd": "2023-01-02T00:00:00.000Z",
-        "sourceId": "test-source",
+        "detectionDateStart": "'"${DETECTION_START}"'",
+        "detectionDateEnd": "'"${DETECTION_END}"'",
+        "sourceId": "'"${TEST_SOURCE_ID}"'",
         "metadata": {},
         "geometry": {
             "type": "Point",

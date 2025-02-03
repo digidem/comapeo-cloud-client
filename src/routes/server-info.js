@@ -8,8 +8,7 @@ import { Type } from '@sinclair/typebox'
  */
 
 /** @import { FastifyInstance, FastifyPluginAsync, FastifyRequest, RawServerDefault } from 'fastify' */
-/** @import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox' */
-/** @type {FastifyPluginAsync<RouteOptions, RawServerDefault, TypeBoxTypeProvider>} */
+/** @type {FastifyPluginAsync<RouteOptions, RawServerDefault>} */
 
 export default async function serverInfoRoutes(fastify, { serverName }) {
   fastify.get(

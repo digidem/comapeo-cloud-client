@@ -136,7 +136,7 @@ test('returns a 400 if trying to add invalid alerts', async (t) => {
         method: 'POST',
         url: `/projects/${projectPublicId}/remoteDetectionAlerts`,
         headers: {
-          Authorization: 'Bearer ' + BEARER_TOKEN,
+          Authorization: `Bearer ${BEARER_TOKEN}`,
           'Content-Type': 'application/json',
         },
         body,

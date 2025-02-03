@@ -1,6 +1,8 @@
 // @ts-check
 import { keyToPublicId as projectKeyToPublicId } from '@mapeo/crypto'
 import { Type } from '@sinclair/typebox'
+// @ts-ignore
+import QRCode from 'qrcode'
 import timingSafeEqual from 'string-timing-safe-equal'
 
 import assert from 'node:assert/strict'
@@ -14,7 +16,8 @@ import { verifyBearerAuth } from './utils.js'
 /** @typedef {import('fastify').FastifyPluginAsync} FastifyPluginAsync */
 /** @typedef {import('fastify').FastifyRequest} FastifyRequest */
 /** @typedef {import('fastify').RawServerDefault} RawServerDefault */
-/** @typedef {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} ProjectRequest */
+/** @typedef {import('fastify').FastifyRequest<{Params: {projectPublicId: string}, Querystring: {qr?: boolean, projectId?: string, name?: string}}>} ProjectRequest */
+/** @typedef {import('../types/project.js').ProjectToAdd} ProjectToAdd */
 
 /**
  * @typedef {object} RouteOptions
@@ -35,12 +38,18 @@ export default async function projectsRoutes(fastify, opts) {
     '/projects',
     {
       schema: {
+        querystring: Type.Object({
+          qr: Type.Optional(Type.Boolean({ default: false })),
+          projectId: Type.Optional(Type.String()),
+          name: Type.Optional(Type.String()),
+        }),
         response: {
           200: Type.Object({
             data: Type.Array(
               Type.Object({
                 projectId: Type.String(),
                 name: Type.Optional(Type.String()),
+                qrCode: Type.Optional(Type.String()),
               }),
             ),
           }),
@@ -51,11 +60,37 @@ export default async function projectsRoutes(fastify, opts) {
         verifyBearerAuth(req, serverBearerToken)
       },
     },
-    async () => {
+    async (req) => {
       const projects = await fastify.comapeo.listProjects()
-      return {
-        data: projects.map((p) => ({ projectId: p.projectId, name: p.name })),
+      let filteredProjects = projects
+
+      const query =
+        /** @type {import('fastify').FastifyRequest<{Querystring: {qr?: boolean, projectId?: string, name?: string}}>} */ (
+          req
+        ).query
+
+      if (query.projectId) {
+        filteredProjects = projects.filter(
+          (p) => p.projectId === query.projectId,
+        )
+      } else if (query.name) {
+        console.log(`Filtering projects by name: ${query.name}`)
+        filteredProjects = projects.filter((p) => p.name === query.name)
+        console.log(
+          `Found ${filteredProjects.length} projects matching name "${query.name}"`,
+        )
       }
+      const projectData = await Promise.all(
+        filteredProjects.map(async (p) => {
+          /** @type {{projectId: string, name?: string, qrCode?: string}} */
+          const data = { projectId: p.projectId, name: p.name }
+          if (query.qr) {
+            data.qrCode = await QRCode.toDataURL(p.projectId)
+          }
+          return data
+        }),
+      )
+      return { data: projectData }
     },
   )
 
@@ -64,12 +99,16 @@ export default async function projectsRoutes(fastify, opts) {
     '/projects',
     {
       schema: {
+        querystring: Type.Object({
+          qr: Type.Optional(Type.Boolean({ default: false })),
+        }),
         body: schemas.projectToAdd,
         response: {
           200: Type.Object({
             data: Type.Object({
               deviceId: schemas.HEX_STRING_32_BYTES,
               projectId: schemas.HEX_STRING_32_BYTES,
+              qrCode: Type.Optional(Type.String()),
             }),
           }),
           400: schemas.errorResponse,
@@ -80,9 +119,12 @@ export default async function projectsRoutes(fastify, opts) {
       },
     },
     async (req) => {
-      const body = /** @type {import('../schemas.js').ProjectToAdd} */ (
-        req.body
-      )
+      const body = /** @type {ProjectToAdd} */ (req.body)
+      const query =
+        /** @type {import('fastify').FastifyRequest<{Querystring: {qr?: boolean}}>} */ (
+          req
+        ).query
+
       const projectKey = body.projectKey
         ? Buffer.from(body.projectKey, 'hex')
         : randomBytes(32)
@@ -148,12 +190,17 @@ export default async function projectsRoutes(fastify, opts) {
       }
       const project = await fastify.comapeo.getProject(projectPublicId)
       project.$sync.start()
-      return {
+      /** @type {{data: {deviceId: string, projectId: string, qrCode?: string}}} */
+      const response = {
         data: {
           deviceId: fastify.comapeo.deviceId,
           projectId: projectPublicId,
         },
       }
+      if (query.qr) {
+        response.data.qrCode = await QRCode.toDataURL(projectPublicId)
+      }
+      return response
     },
   )
 }
