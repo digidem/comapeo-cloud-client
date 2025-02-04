@@ -93,6 +93,74 @@ export default async function projectsRoutes(fastify, opts) {
       return { data: projectData }
     },
   )
+  // GET /projects/:projectId/settings
+  fastify.get(
+    '/projects/:projectId/settings',
+    {
+      schema: {
+        params: Type.Object({
+          projectId: Type.String(),
+        }),
+        response: {
+          200: Type.Object({
+            data: Type.Object({
+              name: Type.Optional(Type.String()),
+              presets: Type.Array(Type.Any()),
+            }),
+          }),
+          404: schemas.errorResponse,
+        },
+      },
+      async preHandler(req) {
+        verifyBearerAuth(req, serverBearerToken)
+      },
+    },
+    async (req) => {
+      const { projectId } =
+        /** @type {import('fastify').FastifyRequest<{Params: {projectId: string}}>} */ (
+          req
+        ).params
+      const project = await fastify.comapeo.getProject(projectId)
+      if (!project) {
+        throw errors.projectNotFoundError()
+      }
+      const settings = await project.$getProjectSettings()
+      if (Object.keys(settings).length === 0) {
+        return {
+          data: {
+            presets: [],
+          },
+        }
+      }
+      const presets = await project.preset.getMany()
+      const fields = await project.field.getMany()
+
+      // Create a map of field docIds to field objects for quick lookup
+      const fieldMap = new Map(fields.map((field) => [field.docId, field]))
+
+      // Transform presets to include linked fields directly
+      const presetsWithFields = presets.map((preset) => {
+        // Get the full field objects for each fieldRef
+        const linkedFields = preset.fieldRefs
+          .map((ref) => fieldMap.get(ref.docId))
+          .filter(Boolean) // Remove any undefined fields
+
+        // Return preset with fields array instead of fieldRefs
+        const { fieldRefs: _fieldRefs, ...presetWithoutRefs } = preset
+        return {
+          ...presetWithoutRefs,
+          fields: linkedFields,
+        }
+      })
+
+      return {
+        data: {
+          ...settings,
+          presets: presetsWithFields,
+        },
+      }
+    },
+  )
 
   // PUT /projects
   fastify.put(
