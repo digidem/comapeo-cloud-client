@@ -93,6 +93,50 @@ export default async function projectsRoutes(fastify, opts) {
       return { data: projectData }
     },
   )
+  // GET /projects/:projectId/settings
+  fastify.get(
+    '/projects/:projectId/settings',
+    {
+      schema: {
+        params: Type.Object({
+          projectId: Type.String(),
+        }),
+        response: {
+          200: Type.Object({
+            data: Type.Object({
+              name: Type.Optional(Type.String()),
+              presets: Type.Array(Type.Any()),
+              fields: Type.Array(Type.Any()),
+            }),
+          }),
+          404: schemas.errorResponse,
+        },
+      },
+      async preHandler(req) {
+        verifyBearerAuth(req, serverBearerToken)
+      },
+    },
+    async (req) => {
+      const { projectId } =
+        /** @type {import('fastify').FastifyRequest<{Params: {projectId: string}}>} */ (
+          req
+        ).params
+      const project = await fastify.comapeo.getProject(projectId)
+      if (!project) {
+        throw errors.projectNotFoundError()
+      }
+      const settings = await project.$getProjectSettings()
+      const presets = await project.preset.getMany()
+      const fields = await project.field.getMany()
+      return {
+        data: {
+          ...settings,
+          presets,
+          fields,
+        },
+      }
+    },
+  )
 
   // PUT /projects
   fastify.put(

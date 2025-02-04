@@ -108,6 +108,15 @@ echo
 FIRST_PROJECT_ID=$(echo "${RESPONSE}" | jq -r '.data[0].projectId')
 FIRST_PROJECT_NAME=$(echo "${RESPONSE}" | jq -r '.data[0].name')
 
+# Test GET /projects/:projectId/settings
+echo "GET /projects/${FIRST_PROJECT_ID}/settings"
+echo "-----------------------------------"
+RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects/${FIRST_PROJECT_ID}/settings") || (echo "❌ Failed" && exit 1)
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+
 # Test GET /projects with projectId filter
 echo "GET /projects with projectId filter"
 echo "---------------------------------"
