@@ -106,7 +106,6 @@ export default async function projectsRoutes(fastify, opts) {
             data: Type.Object({
               name: Type.Optional(Type.String()),
               presets: Type.Array(Type.Any()),
-              fields: Type.Array(Type.Any()),
             }),
           }),
           404: schemas.errorResponse,
@@ -126,6 +125,13 @@ export default async function projectsRoutes(fastify, opts) {
         throw errors.projectNotFoundError()
       }
       const settings = await project.$getProjectSettings()
+      if (Object.keys(settings).length === 0) {
+        return {
+          data: {
+            presets: [],
+          },
+        }
+      }
       const presets = await project.preset.getMany()
       const fields = await project.field.getMany()
 
