@@ -128,11 +128,29 @@ export default async function projectsRoutes(fastify, opts) {
       const settings = await project.$getProjectSettings()
       const presets = await project.preset.getMany()
       const fields = await project.field.getMany()
+
+      // Create a map of field docIds to field objects for quick lookup
+      const fieldMap = new Map(fields.map((field) => [field.docId, field]))
+
+      // Transform presets to include linked fields directly
+      const presetsWithFields = presets.map((preset) => {
+        // Get the full field objects for each fieldRef
+        const linkedFields = preset.fieldRefs
+          .map((ref) => fieldMap.get(ref.docId))
+          .filter(Boolean) // Remove any undefined fields
+
+        // Return preset with fields array instead of fieldRefs
+        const { fieldRefs: _fieldRefs, ...presetWithoutRefs } = preset
+        return {
+          ...presetWithoutRefs,
+          fields: linkedFields,
+        }
+      })
+
       return {
         data: {
           ...settings,
-          presets,
-          fields,
+          presets: presetsWithFields,
         },
       }
     },
