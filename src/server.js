@@ -84,23 +84,38 @@ const fastify = createFastify({
 // Register Swagger
 // @ts-ignore
 await fastify.register(import('@fastify/swagger'), {
-  swagger: {
+  openapi: {
     info: {
       title: 'Mapeo Cloud API',
       description: 'API documentation for Mapeo Cloud Server',
       version: '1.0.0',
     },
-    host: `localhost:${config.PORT}`,
-    schemes: ['http', 'https'],
-    consumes: ['application/json'],
-    produces: ['application/json'],
-    securityDefinitions: {
-      bearerAuth: {
-        type: 'apiKey',
-        name: 'Authorization',
-        in: 'header',
-        description:
-          'Enter the token with the `Bearer: ` prefix, e.g. "Bearer abcde12345"',
+    servers: [
+      {
+        url: '{protocol}://{hostname}:{port}',
+        variables: {
+          protocol: {
+            enum: ['http', 'https'],
+            default: 'http',
+          },
+          hostname: {
+            default: 'localhost',
+          },
+          port: {
+            default: config.PORT.toString(),
+          },
+        },
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description:
+            'Enter the token with the `Bearer: ` prefix, e.g. "Bearer abcde12345"',
+        },
       },
     },
     security: [
@@ -109,8 +124,8 @@ await fastify.register(import('@fastify/swagger'), {
       },
     ],
   },
-  exposeRoute: true,
 })
+
 // @ts-ignore
 await fastify.register(import('@fastify/swagger-ui'), {
   routePrefix: '/docs',
