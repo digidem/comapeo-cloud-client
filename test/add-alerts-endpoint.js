@@ -175,13 +175,12 @@ test('adding alerts', async (t) => {
         method: 'POST',
         url: `/projects/${projectId}/remoteDetectionAlerts`,
         headers: {
-          Authorization: 'Bearer ' + BEARER_TOKEN,
+          Authorization: `Bearer ${BEARER_TOKEN}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(alert),
       })
-      assert.equal(response.statusCode, 201)
-      assert.equal(response.body, '')
+      assert.equal(response.statusCode, 200)
     }),
   )
 

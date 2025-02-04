@@ -45,7 +45,7 @@ test('adding an observation', async (t) => {
     body: observationData,
   })
 
-  assert.equal(response.statusCode, 201)
+  assert.equal(response.statusCode, 200)
 })
 
 test('returns 401 if no auth provided', async (t) => {

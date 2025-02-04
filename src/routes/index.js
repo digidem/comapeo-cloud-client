@@ -1,3 +1,6 @@
+import { STATUS_CODES } from 'node:http'
+
+import * as errors from '../errors.js'
 import alertsRoutes from './alerts.js'
 import observationsRoutes from './observations.js'
 import projectsRoutes from './projects.js'
@@ -13,7 +16,6 @@ import syncRoutes from './sync.js'
  * @prop {string} serverName
  * @prop {undefined | number | string[]} [allowedProjects=1]
  */
-
 export default async function routes(
   /** @type {import('fastify').FastifyInstance} */ fastify,
   /** @type {RouteOptions} */ {
@@ -23,6 +25,28 @@ export default async function routes(
     allowedProjects = 1,
   },
 ) {
+  fastify.setErrorHandler((error, _req, reply) => {
+    /** @type {number} */
+    let statusCode = error.statusCode || 500
+    if (
+      !Number.isInteger(statusCode) ||
+      statusCode < 400 ||
+      statusCode >= 600
+    ) {
+      statusCode = 500
+    }
+
+    const code = errors.normalizeCode(
+      typeof error.code === 'string'
+        ? error.code
+        : STATUS_CODES[statusCode] || 'ERROR',
+    )
+
+    const { message = 'Server error' } = error
+
+    reply.status(statusCode).send({ error: { code, message } })
+  })
+
   // Create a common options object marked as any to bypass type-check errors
   const commonOpts = /** @type {any} */ ({
     serverBearerToken,

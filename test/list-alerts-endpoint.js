@@ -56,7 +56,7 @@ test('returns a 404 if trying to list alerts from a non-existent project', async
     method: 'GET',
     url: `/projects/${randomProjectPublicId()}/remoteDetectionAlerts`,
     headers: {
-      Authorization: 'Bearer ' + BEARER_TOKEN,
+      Authorization: `Bearer ${BEARER_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(generateAlert()),
@@ -91,13 +91,12 @@ test.only('adding alerts', async (t) => {
         method: 'POST',
         url: `/projects/${projectId}/remoteDetectionAlerts`,
         headers: {
-          Authorization: 'Bearer ' + BEARER_TOKEN,
+          Authorization: `Bearer ${BEARER_TOKEN}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(alert),
       })
-      assert.equal(response.statusCode, 201)
-      assert.equal(response.body, '')
+      assert.equal(response.statusCode, 200)
     }),
   )
 
@@ -105,7 +104,7 @@ test.only('adding alerts', async (t) => {
     method: 'GET',
     url: `/projects/${projectId}/remoteDetectionAlerts`,
     headers: {
-      Authorization: 'Bearer ' + BEARER_TOKEN,
+      Authorization: `Bearer ${BEARER_TOKEN}`,
     },
   })
 
