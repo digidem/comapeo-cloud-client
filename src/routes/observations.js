@@ -115,9 +115,10 @@ export default async function observationRoutes(
           ...attachment,
           hash: '', // Required by schema but not used
         })),
-        presetRef: preset
-          ? { docId: preset.docId, versionId: preset.versionId }
-          : null,
+        presetRef: preset && {
+          docId: preset.docId,
+          versionId: preset.versionId,
+        },
         tags: body.tags || {},
         metadata: body.metadata || {
           manualLocation: false,
