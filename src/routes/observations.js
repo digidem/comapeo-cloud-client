@@ -78,6 +78,10 @@ export default async function observationRoutes(
       params: Type.Object({
         projectPublicId: Type.String(),
       }),
+      querystring: Type.Object({
+        versionId: Type.Optional(Type.String()),
+        category: Type.Optional(Type.String()),
+      }),
       body: schemas.observationToAdd,
       response: {
         201: Type.Literal(''),
@@ -90,9 +94,19 @@ export default async function observationRoutes(
     },
     handler: async (req) => {
       const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
+      const { versionId, category } =
+        /** @type {import('fastify').FastifyRequest<{Querystring: {versionId?: string, category?: string}}>} */ (
+          req
+        ).query
       const body = /** @type {ObservationToAdd} */ (req.body)
       const project = await fastify.comapeo.getProject(projectPublicId)
 
+      let preset
+      if (category) {
+        const presets = await project.preset.getMany()
+        preset = presets.find((p) => p.name === category)
+      }
+      console.log('category', category, preset)
       const observationData = {
         schemaName: /** @type {const} */ ('observation'),
         lat: body.lat,
@@ -101,6 +115,9 @@ export default async function observationRoutes(
           ...attachment,
           hash: '', // Required by schema but not used
         })),
+        presetRef: preset
+          ? { docId: preset.docId, versionId: preset.versionId }
+          : null,
         tags: body.tags || {},
         metadata: body.metadata || {
           manualLocation: false,
@@ -115,7 +132,12 @@ export default async function observationRoutes(
         },
       }
 
-      const response = await project.observation.create(observationData)
+      let response
+      if (versionId) {
+        response = await project.observation.update(versionId, observationData)
+      } else {
+        response = await project.observation.create(observationData)
+      }
       return response
     },
   })

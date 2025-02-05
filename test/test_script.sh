@@ -141,8 +141,8 @@ PROJECT_ID=${FIRST_PROJECT_ID}
 echo "Using project ID: ${PROJECT_ID}"
 echo
 
-# Test PUT /projects/:projectId/observation
-echo "PUT /projects/${PROJECT_ID}/observation"
+# Test PUT /projects/:projectId/observation - create
+echo "PUT /projects/${PROJECT_ID}/observation - create"
 echo "-------------------------------------"
 RESPONSE=$(curl -s -f -X PUT \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
@@ -154,6 +154,31 @@ RESPONSE=$(curl -s -f -X PUT \
         "attachments": []
     }' \
     "${HOST}/projects/${PROJECT_ID}/observation") || (echo "❌ Failed" && exit 1)
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Get versionId from response
+# Parse response JSON to extract versionId
+VERSION_ID=$(echo "${RESPONSE}" | jq -r '.versionId')
+echo "Using version ID: ${VERSION_ID}"
+
+# Test PUT /projects/:projectId/observation - update
+echo "PUT /projects/${PROJECT_ID}/observation - update"
+echo "-------------------------------------"
+RESPONSE=$(curl -s -f -X PUT \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "lat": 0,
+        "lon": 0,
+        "tags": {
+            "notes": "Updated observation",
+            "category": "test"
+        },
+        "attachments": []
+    }' \
+    "${HOST}/projects/${PROJECT_ID}/observation?versionId=${VERSION_ID}") || (echo "❌ Failed" && exit 1)
 echo "Response: ${RESPONSE}"
 echo "✅ Passed"
 echo
