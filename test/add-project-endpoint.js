@@ -97,6 +97,7 @@ test('adding a project', async (t) => {
     data: {
       deviceId: server.deviceId,
       projectId: response.json().data.projectId,
+      projectName: response.json().data.projectName,
     },
   })
 })

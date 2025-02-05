@@ -15,7 +15,7 @@
     "import": "./src/app.js"
   },
   "scripts": {
-    "dev": "nodemon src/server.js",
+    "dev": "nodemon --ignore 'data/' src/server.js",
     "start": "node src/server.js",
     "build:clean": "rm -rf dist",
     "build:typescript": "tsc --project ./tsconfig.build.json",

@@ -138,6 +138,7 @@ fastify.register(comapeoServer, {
   rootKey,
   coreStorage,
   dbFolder,
+  defaultStorage: DEFAULT_STORAGE,
   projectMigrationsFolder,
   clientMigrationsFolder,
 })

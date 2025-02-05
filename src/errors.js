@@ -47,6 +47,14 @@ export const projectNotFoundError = () =>
 export const shouldBeImpossibleError = (value) =>
   new Error(`${value} should be impossible`)
 
+/** @param {string} message */
+export const unauthorizedError = (message) =>
+  new HttpError(401, 'UNAUTHORIZED', message)
+
+/** @param {string} message */
+export const conflictError = (message) =>
+  new HttpError(409, 'CONFLICT', message)
+
 /**
  * @param {string} str
  * @returns {string}

@@ -5,9 +5,12 @@
 // is not in scope.
 import { type MapeoManager } from '@comapeo/core'
 
+import { type DB } from '../db.js'
+
 declare module 'fastify' {
   interface FastifyInstance {
     comapeo: MapeoManager
+    db: DB
   }
   interface FastifyRequest {
     baseUrl: URL

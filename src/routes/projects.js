@@ -176,6 +176,7 @@ export default async function projectsRoutes(fastify, opts) {
             data: Type.Object({
               deviceId: schemas.HEX_STRING_32_BYTES,
               projectId: schemas.HEX_STRING_32_BYTES,
+              projectName: Type.String(),
               qrCode: Type.Optional(Type.String()),
             }),
           }),
@@ -255,11 +256,12 @@ export default async function projectsRoutes(fastify, opts) {
       }
       const project = await fastify.comapeo.getProject(projectPublicId)
       project.$sync.start()
-      /** @type {{data: {deviceId: string, projectId: string, qrCode?: string}}} */
+      /** @type {{data: {deviceId: string, projectId: string, projectName: string, qrCode?: string}}} */
       const response = {
         data: {
           deviceId: fastify.comapeo.deviceId,
           projectId: projectPublicId,
+          projectName: body.projectName,
         },
       }
       if (query.qr) {
