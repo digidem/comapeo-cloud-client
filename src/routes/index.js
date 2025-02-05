@@ -2,6 +2,7 @@ import { STATUS_CODES } from 'node:http'
 
 import * as errors from '../errors.js'
 import alertsRoutes from './alerts.js'
+import authRoutes from './auth.js'
 import observationsRoutes from './observations.js'
 import projectsRoutes from './projects.js'
 import rootRoutes from './root.js'
@@ -66,4 +67,5 @@ export default async function routes(
   )
   fastify.register(alertsRoutes, commonOpts)
   fastify.register(syncRoutes, commonOpts)
+  fastify.register(authRoutes, commonOpts)
 }

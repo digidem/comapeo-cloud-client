@@ -9,6 +9,7 @@ import RAM from 'random-access-memory'
 
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
+import { mkdtempSync } from 'node:fs'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import comapeoServer from '../src/app.js'
@@ -55,10 +56,12 @@ export function getManagerOptions() {
 export function createTestServer(t, serverOptions) {
   const managerOptions = getManagerOptions()
   const km = new KeyManager(managerOptions.rootKey)
+  const defaultStorage = mkdtempSync('/tmp/comapeo-test-')
   const server = createFastify()
   server.register(comapeoServer, {
     ...managerOptions,
     ...TEST_SERVER_DEFAULTS,
+    defaultStorage, // Pass function directly in options
     ...serverOptions,
   })
   t.after(() => server.close())
