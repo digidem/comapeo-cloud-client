@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox'
+import slugify from '@sindresorhus/slugify'
 
 import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
@@ -106,8 +107,12 @@ export default async function observationRoutes(
 
       let preset
       if (category) {
-        const presets = await project.preset.getMany({ lang: locale })
-        preset = presets.find((p) => p.name === category)
+        const presets = await project.preset.getMany({ lang: locale || 'en' })
+        preset = presets.find(
+          (p) =>
+            slugify(p.name, { lowercase: true }) ===
+            slugify(category, { lowercase: true }),
+        )
         if (!preset) {
           throw errors.badRequestError(`Category "${category}" not found`)
         }

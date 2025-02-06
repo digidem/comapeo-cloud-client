@@ -141,7 +141,7 @@ export default async function projectsRoutes(fastify, opts) {
       }
       const presets = locale
         ? await project.preset.getMany({ lang: locale })
-        : await project.preset.getMany({ lang: locale })
+        : await project.preset.getMany()
       const fields = await project.field.getMany()
 
       // Create a map of field docIds to field objects for quick lookup
