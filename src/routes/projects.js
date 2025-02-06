@@ -101,6 +101,9 @@ export default async function projectsRoutes(fastify, opts) {
         params: Type.Object({
           projectId: Type.String(),
         }),
+        querystring: Type.Object({
+          locale: Type.Optional(Type.String()),
+        }),
         response: {
           200: Type.Object({
             data: Type.Object({
@@ -120,6 +123,10 @@ export default async function projectsRoutes(fastify, opts) {
         /** @type {import('fastify').FastifyRequest<{Params: {projectId: string}}>} */ (
           req
         ).params
+      const { locale } =
+        /** @type {import('fastify').FastifyRequest<{Querystring: {locale?: string}}>} */ (
+          req
+        ).query
       const project = await fastify.comapeo.getProject(projectId)
       if (!project) {
         throw errors.projectNotFoundError()
@@ -132,7 +139,9 @@ export default async function projectsRoutes(fastify, opts) {
           },
         }
       }
-      const presets = await project.preset.getMany()
+      const presets = locale
+        ? await project.preset.getMany({ lang: locale })
+        : await project.preset.getMany({ lang: locale })
       const fields = await project.field.getMany()
 
       // Create a map of field docIds to field objects for quick lookup

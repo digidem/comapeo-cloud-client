@@ -82,6 +82,7 @@ export default async function observationRoutes(
       querystring: Type.Object({
         versionId: Type.Optional(Type.String()),
         category: Type.Optional(Type.String()),
+        locale: Type.Optional(Type.String()),
       }),
       body: Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
       response: {
@@ -97,15 +98,15 @@ export default async function observationRoutes(
     },
     handler: async (req) => {
       const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
-      const { versionId, category } =
-        /** @type {import('fastify').FastifyRequest<{Querystring: {versionId?: string, category?: string}}>} */ (
+      const { versionId, category, locale } =
+        /** @type {import('fastify').FastifyRequest<{Querystring: {versionId?: string, category?: string, locale?: string}}>} */ (
           req
         ).query
       const project = await fastify.comapeo.getProject(projectPublicId)
 
       let preset
       if (category) {
-        const presets = await project.preset.getMany()
+        const presets = await project.preset.getMany({ lang: locale })
         preset = presets.find((p) => p.name === category)
         if (!preset) {
           throw errors.badRequestError(`Category "${category}" not found`)
