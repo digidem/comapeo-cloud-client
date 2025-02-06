@@ -16,7 +16,7 @@ export const errorResponse = Type.Object({
   }),
 })
 
-/** @type {import('@sinclair/typebox').TObject} */
+// Schema for adding a project
 export const projectToAdd = Type.Object({
   projectName: Type.String({ minLength: 1 }),
   projectKey: Type.Optional(HEX_STRING_32_BYTES),
@@ -33,6 +33,14 @@ export const projectToAdd = Type.Object({
 
 /** @typedef {import('./types/project.js').ProjectToAdd} ProjectToAdd */
 
+// Define a dedicated attachment schema for observations
+export const attachmentSchema = Type.Object({
+  driveDiscoveryId: Type.String(),
+  type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
+  name: Type.String(),
+  hash: Type.Optional(Type.String()),
+})
+
 /** @typedef {import('@sinclair/typebox').Static<typeof observationToAdd>} ObservationToAdd */
 /** @typedef {{driveDiscoveryId: string, type: 'photo'|'audio', name: string, hash?: string}} Attachment */
 export const observationToAdd = Type.Object({
@@ -46,6 +54,12 @@ export const observationToAdd = Type.Object({
         name: Type.String(),
       }),
     ),
+  ),
+  presetRef: Type.Optional(
+    Type.Object({
+      docId: Type.String(),
+      versionId: Type.String(),
+    }),
   ),
   tags: Type.Optional(
     Type.Record(
@@ -96,6 +110,45 @@ export const attachmentQuerystring = Type.Object({
       Type.Literal('preview'),
       Type.Literal('thumbnail'),
     ]),
+  ),
+})
+
+// Schema for updating an observation (when versionId is provided)
+export const observationToUpdate = Type.Object({
+  schemaName: Type.Literal('observation'),
+  attachments: Type.Optional(
+    Type.Array(
+      Type.Object({
+        driveDiscoveryId: Type.String(),
+        type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
+        name: Type.String(),
+      }),
+    ),
+  ),
+  tags: Type.Optional(
+    Type.Record(
+      Type.String(),
+      Type.Union([
+        Type.Boolean(),
+        Type.Number(),
+        Type.String(),
+        Type.Null(),
+        Type.Array(
+          Type.Union([
+            Type.Boolean(),
+            Type.Number(),
+            Type.String(),
+            Type.Null(),
+          ]),
+        ),
+      ]),
+    ),
+  ),
+  presetRef: Type.Optional(
+    Type.Object({
+      docId: Type.String(),
+      versionId: Type.String(),
+    }),
   ),
 })
 

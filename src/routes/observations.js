@@ -11,6 +11,7 @@ import { ensureProjectExists, verifyBearerAuth } from './utils.js'
 /** @typedef {import('fastify').RawServerDefault} RawServerDefault */
 /** @typedef {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} ProjectRequest */
 /** @typedef {import('../schemas.js').ObservationToAdd} ObservationToAdd */
+/** @typedef {import('../schemas.js').observationToUpdate} ObservationToUpdate */
 /** @typedef {import('../schemas.js').AttachmentQuerystring} AttachmentQuerystring */
 
 /**
@@ -82,7 +83,7 @@ export default async function observationRoutes(
         versionId: Type.Optional(Type.String()),
         category: Type.Optional(Type.String()),
       }),
-      body: schemas.observationToAdd,
+      body: Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
       response: {
         201: Type.Literal(''),
         '4xx': schemas.errorResponse,
@@ -98,7 +99,6 @@ export default async function observationRoutes(
         /** @type {import('fastify').FastifyRequest<{Querystring: {versionId?: string, category?: string}}>} */ (
           req
         ).query
-      const body = /** @type {ObservationToAdd} */ (req.body)
       const project = await fastify.comapeo.getProject(projectPublicId)
 
       let preset
@@ -106,43 +106,64 @@ export default async function observationRoutes(
         const presets = await project.preset.getMany()
         preset = presets.find((p) => p.name === category)
       }
-      console.log('category', category, preset)
-      const observationData = {
-        schemaName: /** @type {const} */ ('observation'),
-        lat: body.lat,
-        lon: body.lon,
-        attachments: (body.attachments || []).map((attachment) => ({
-          ...attachment,
-          hash: '', // Required by schema but not used
-        })),
-        presetRef: preset && {
-          docId: preset.docId,
-          versionId: preset.versionId,
-        },
-        tags: body.tags || {},
-        metadata: body.metadata || {
-          manualLocation: false,
-          position: {
-            mocked: false,
-            timestamp: new Date().toISOString(),
-            coords: {
-              latitude: body.lat,
-              longitude: body.lon,
-            },
-          },
-        },
-      }
 
       let response
       if (versionId) {
+        // Use observationToUpdate when versionId is provided
+        const bodyUpdate =
+          /** @type {import('@sinclair/typebox').Static<typeof schemas.observationToUpdate>} */ (
+            req.body
+          )
+        const observationData = {
+          schemaName: /** @type {const} */ ('observation'),
+          attachments: (bodyUpdate.attachments || []).map((attachment) => ({
+            ...attachment,
+            hash: '', // Required by schema but not used
+          })),
+          tags: bodyUpdate.tags ?? {}, // Always include tags, default to empty object
+          ...(preset && {
+            presetRef: {
+              docId: preset.docId,
+              versionId: preset.versionId,
+            },
+          }),
+        }
         response = await project.observation.update(versionId, observationData)
       } else {
+        // Use observationToAdd when versionId is not provided (create)
+        const bodyAdd =
+          /** @type {import('@sinclair/typebox').Static<typeof schemas.observationToAdd>} */ (
+            req.body
+          )
+        const observationData = {
+          schemaName: /** @type {const} */ ('observation'),
+          lat: bodyAdd.lat,
+          lon: bodyAdd.lon,
+          attachments: (bodyAdd.attachments || []).map((attachment) => ({
+            ...attachment,
+            hash: '', // Required by schema but not used
+          })),
+          presetRef: preset
+            ? { docId: preset.docId, versionId: preset.versionId }
+            : void 0,
+          tags: bodyAdd.tags ?? {},
+          metadata: bodyAdd.metadata || {
+            manualLocation: false,
+            position: {
+              mocked: false,
+              timestamp: new Date().toISOString(),
+              coords: {
+                latitude: bodyAdd.lat,
+                longitude: bodyAdd.lon,
+              },
+            },
+          },
+        }
         response = await project.observation.create(observationData)
       }
       return response
     },
   })
-
   fastify.get(
     '/projects/:projectPublicId/attachments/:driveDiscoveryId/:type/:name',
     {
