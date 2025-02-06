@@ -83,9 +83,47 @@ export default async function observationRoutes(
         versionId: Type.Optional(Type.String()),
         category: Type.Optional(Type.String()),
       }),
-      body: Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
+      body: Type.Union([
+        // For creating new observations
+        Type.Object({
+          lat: Type.Number(),
+          lon: Type.Number(),
+          tags: Type.Optional(Type.Record(Type.String(), Type.String())),
+          attachments: Type.Optional(
+            Type.Array(
+              Type.Object({
+                type: Type.Union([
+                  Type.Literal('photo'),
+                  Type.Literal('audio'),
+                ]),
+                name: Type.String(),
+                driveDiscoveryId: Type.String(),
+              }),
+            ),
+          ),
+          metadata: Type.Optional(Type.Object({})),
+        }),
+        // For updating existing observations
+        Type.Object({
+          tags: Type.Optional(Type.Record(Type.String(), Type.String())),
+          attachments: Type.Optional(
+            Type.Array(
+              Type.Object({
+                type: Type.Union([
+                  Type.Literal('photo'),
+                  Type.Literal('audio'),
+                ]),
+                name: Type.String(),
+                driveDiscoveryId: Type.String(),
+              }),
+            ),
+          ),
+        }),
+      ]),
       response: {
-        201: Type.Literal(''),
+        200: Type.Object({
+          versionId: Type.String(),
+        }),
         '4xx': schemas.errorResponse,
       },
     },
@@ -105,25 +143,34 @@ export default async function observationRoutes(
       if (category) {
         const presets = await project.preset.getMany()
         preset = presets.find((p) => p.name === category)
+        if (!preset) {
+          throw errors.badRequestError(`Category "${category}" not found`)
+        }
       }
 
-      let response
       if (versionId) {
-        // Use observationToUpdate when versionId is provided.
-        // lat and lon are intentionally not updated on update.
-        const bodyUpdate =
-          /** @type {import('@sinclair/typebox').Static<typeof schemas.observationToUpdate>} */ (
-            req.body
+        // Update existing observation
+        const body = /** @type {Record<string, any>} */ (req.body)
+
+        // Explicitly reject lat/lon in updates
+        if ('lat' in body || 'lon' in body) {
+          throw errors.badRequestError(
+            'Cannot update lat/lon of existing observation',
           )
-        // Destructure and ignore lat and lon if provided in the update payload.
-        const { attachments, tags } = bodyUpdate
+        }
+
         const observationData = {
           schemaName: /** @type {const} */ ('observation'),
-          attachments: (attachments || []).map((attachment) => ({
-            ...attachment,
-            hash: '', // Required by schema but not used
-          })),
-          tags: tags ?? {}, // Always include tags, default to empty object
+          attachments: (body.attachments || []).map(
+            (/** @type {import('../schemas.js').Attachment} */ attachment) => ({
+              ...attachment,
+              hash: '',
+            }),
+          ),
+          tags: {
+            ...(preset ? preset.tags : {}),
+            ...(body.tags || {}),
+          },
           ...(preset && {
             presetRef: {
               docId: preset.docId,
@@ -131,43 +178,50 @@ export default async function observationRoutes(
             },
           }),
         }
-        response = await project.observation.update(versionId, observationData)
-      } else {
-        // Use observationToAdd when versionId is not provided (create)
-        const bodyAdd =
-          /** @type {import('@sinclair/typebox').Static<typeof schemas.observationToAdd>} */ (
-            req.body
-          )
-        const observationData = {
-          schemaName: /** @type {const} */ ('observation'),
-          lat: bodyAdd.lat,
-          lon: bodyAdd.lon,
-          attachments: (bodyAdd.attachments || []).map((attachment) => ({
+
+        return await project.observation.update(versionId, observationData)
+      }
+
+      // Create new observation
+      const body = /** @type {Record<string, any>} */ (req.body)
+
+      if (typeof body.lat !== 'number' || typeof body.lon !== 'number') {
+        throw errors.badRequestError(
+          'lat and lon are required for new observations',
+        )
+      }
+
+      const observationData = {
+        schemaName: /** @type {const} */ ('observation'),
+        lat: body.lat,
+        lon: body.lon,
+        attachments: (body.attachments || []).map(
+          (/** @type {import('../schemas.js').Attachment} */ attachment) => ({
             ...attachment,
-            hash: '', // Required by schema but not used
-          })),
-          presetRef: preset
-            ? { docId: preset.docId, versionId: preset.versionId }
-            : void 0,
-          tags: {
-            ...(preset ? preset.tags : {}),
-            ...(bodyAdd.tags ?? {}),
-          },
-          metadata: bodyAdd.metadata || {
-            manualLocation: false,
-            position: {
-              mocked: false,
-              timestamp: new Date().toISOString(),
-              coords: {
-                latitude: bodyAdd.lat,
-                longitude: bodyAdd.lon,
-              },
+            hash: '',
+          }),
+        ),
+        presetRef: preset
+          ? { docId: preset.docId, versionId: preset.versionId }
+          : void 0,
+        tags: {
+          ...(preset ? preset.tags : {}),
+          ...(body.tags || {}),
+        },
+        metadata: body.metadata || {
+          manualLocation: false,
+          position: {
+            mocked: false,
+            timestamp: new Date().toISOString(),
+            coords: {
+              latitude: body.lat,
+              longitude: body.lon,
             },
           },
-        }
-        response = await project.observation.create(observationData)
+        },
       }
-      return response
+
+      return await project.observation.create(observationData)
     },
   })
   fastify.get(

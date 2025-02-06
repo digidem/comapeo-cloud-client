@@ -170,13 +170,10 @@ RESPONSE=$(curl -s -f -X PUT \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{
-        "lat": 0,
-        "lon": 0,
         "tags": {
             "notes": "Updated observation",
             "category": "test"
-        },
-        "attachments": []
+        }
     }' \
     "${HOST}/projects/${PROJECT_ID}/observation?versionId=${VERSION_ID}") || (echo "❌ Failed" && exit 1)
 echo "Response: ${RESPONSE}"
