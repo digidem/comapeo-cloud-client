@@ -83,43 +83,7 @@ export default async function observationRoutes(
         versionId: Type.Optional(Type.String()),
         category: Type.Optional(Type.String()),
       }),
-      body: Type.Union([
-        // For creating new observations
-        Type.Object({
-          lat: Type.Number(),
-          lon: Type.Number(),
-          tags: Type.Optional(Type.Record(Type.String(), Type.String())),
-          attachments: Type.Optional(
-            Type.Array(
-              Type.Object({
-                type: Type.Union([
-                  Type.Literal('photo'),
-                  Type.Literal('audio'),
-                ]),
-                name: Type.String(),
-                driveDiscoveryId: Type.String(),
-              }),
-            ),
-          ),
-          metadata: Type.Optional(Type.Object({})),
-        }),
-        // For updating existing observations
-        Type.Object({
-          tags: Type.Optional(Type.Record(Type.String(), Type.String())),
-          attachments: Type.Optional(
-            Type.Array(
-              Type.Object({
-                type: Type.Union([
-                  Type.Literal('photo'),
-                  Type.Literal('audio'),
-                ]),
-                name: Type.String(),
-                driveDiscoveryId: Type.String(),
-              }),
-            ),
-          ),
-        }),
-      ]),
+      body: Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
       response: {
         200: Type.Object({
           versionId: Type.String(),

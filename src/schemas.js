@@ -73,8 +73,8 @@ export const attachmentQuerystring = Type.Object({
 // Observation Schemas
 // -----------------------------------------------------------------
 export const observationToAdd = Type.Object({
-  lat: latitude,
-  lon: longitude,
+  lat: Type.Number(),
+  lon: Type.Number(),
   attachments: Type.Optional(
     Type.Array(
       Type.Object({
@@ -84,48 +84,11 @@ export const observationToAdd = Type.Object({
       }),
     ),
   ),
-  presetRef: Type.Optional(
-    Type.Object({
-      docId: Type.String(),
-      versionId: Type.String(),
-    }),
-  ),
-  tags: Type.Optional(
-    Type.Record(
-      Type.String(),
-      Type.Union([
-        Type.Boolean(),
-        Type.Number(),
-        Type.String(),
-        Type.Null(),
-        Type.Array(
-          Type.Union([
-            Type.Boolean(),
-            Type.Number(),
-            Type.String(),
-            Type.Null(),
-          ]),
-        ),
-      ]),
-    ),
-  ),
-  metadata: Type.Optional(
-    Type.Object({
-      manualLocation: Type.Boolean(),
-      position: Type.Object({
-        mocked: Type.Boolean(),
-        timestamp: Type.String(),
-        coords: Type.Object({
-          latitude: Type.Number(),
-          longitude: Type.Number(),
-        }),
-      }),
-    }),
-  ),
+  tags: Type.Optional(Type.Record(Type.String(), Type.String())),
+  metadata: Type.Optional(Type.Object({})),
 })
 
 export const observationToUpdate = Type.Object({
-  schemaName: Type.Literal('observation'),
   attachments: Type.Optional(
     Type.Array(
       Type.Object({
@@ -135,31 +98,7 @@ export const observationToUpdate = Type.Object({
       }),
     ),
   ),
-  tags: Type.Optional(
-    Type.Record(
-      Type.String(),
-      Type.Union([
-        Type.Boolean(),
-        Type.Number(),
-        Type.String(),
-        Type.Null(),
-        Type.Array(
-          Type.Union([
-            Type.Boolean(),
-            Type.Number(),
-            Type.String(),
-            Type.Null(),
-          ]),
-        ),
-      ]),
-    ),
-  ),
-  presetRef: Type.Optional(
-    Type.Object({
-      docId: Type.String(),
-      versionId: Type.String(),
-    }),
-  ),
+  tags: Type.Optional(Type.Record(Type.String(), Type.String())),
 })
 
 export const observationResult = Type.Object({
