@@ -109,18 +109,21 @@ export default async function observationRoutes(
 
       let response
       if (versionId) {
-        // Use observationToUpdate when versionId is provided
+        // Use observationToUpdate when versionId is provided.
+        // lat and lon are intentionally not updated on update.
         const bodyUpdate =
           /** @type {import('@sinclair/typebox').Static<typeof schemas.observationToUpdate>} */ (
             req.body
           )
+        // Destructure and ignore lat and lon if provided in the update payload.
+        const { attachments, tags } = bodyUpdate
         const observationData = {
           schemaName: /** @type {const} */ ('observation'),
-          attachments: (bodyUpdate.attachments || []).map((attachment) => ({
+          attachments: (attachments || []).map((attachment) => ({
             ...attachment,
             hash: '', // Required by schema but not used
           })),
-          tags: bodyUpdate.tags ?? {}, // Always include tags, default to empty object
+          tags: tags ?? {}, // Always include tags, default to empty object
           ...(preset && {
             presetRef: {
               docId: preset.docId,
@@ -146,7 +149,10 @@ export default async function observationRoutes(
           presetRef: preset
             ? { docId: preset.docId, versionId: preset.versionId }
             : void 0,
-          tags: bodyAdd.tags ?? {},
+          tags: {
+            ...(preset ? preset.tags : {}),
+            ...(bodyAdd.tags ?? {}),
+          },
           metadata: bodyAdd.metadata || {
             manualLocation: false,
             position: {
