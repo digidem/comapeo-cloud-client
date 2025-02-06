@@ -79,9 +79,10 @@ RESPONSE=$(curl -s -f -X PUT \
     }' \
     "${HOST}/projects") || (echo "❌ Failed" && exit 1)
 echo "Response: ${RESPONSE}"
+PROJECT_ID=$(echo "${RESPONSE}" | jq -r '.data.projectId')
+echo "Project ID: ${PROJECT_ID}"
 echo "✅ Passed"
 echo
-
 # Verify project was created
 echo "GET /projects to verify project exists"
 echo "----------------------------------------"
@@ -124,6 +125,41 @@ echo "Response: ${RESPONSE}"
 MEMBER_TOKEN=$(echo "${RESPONSE}" | jq -r '.data.token')
 echo "✅ Passed"
 echo
+
+echo "PUT /projects/${PROJECT_ID}/observation - create (using coordinator token)"
+CREATE_RESPONSE=$(curl -s -f -X PUT \
+  -H "Authorization: Bearer ${COORDINATOR_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "lat": 13,
+        "lon": 14,
+        "tags": {
+            "created_by": "coordinator"
+        },
+        "attachments": []
+      }' \
+  "${HOST}/projects/${PROJECT_ID}/observation") || (echo "❌ Failed to create observation" && exit 1)
+echo "Response: ${CREATE_RESPONSE}"
+echo "✅ Passed"
+
+# Extract versionId from creation response
+VERSION_ID=$(echo "${CREATE_RESPONSE}" | jq -r '.versionId')
+echo "Using version ID: ${VERSION_ID}"
+
+echo "PUT /projects/${PROJECT_ID}/observation - update (using member token)"
+UPDATE_RESPONSE=$(curl -s -f -X PUT \
+  -H "Authorization: Bearer ${MEMBER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "tags": {
+            "updated_by": "member",
+            "notes": "Observation updated using member token"
+        }
+      }' \
+  "${HOST}/projects/${PROJECT_ID}/observation?versionId=${VERSION_ID}") || (echo "❌ Failed to update observation" && exit 1)
+echo "Response: ${UPDATE_RESPONSE}"
+echo "✅ Passed"
+
 
 echo "========================"
 echo "🎉 All tests completed successfully!"

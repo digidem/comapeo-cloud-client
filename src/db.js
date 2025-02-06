@@ -18,6 +18,7 @@ const DB_FILE = 'users.json'
  * @property {string} phoneNumber
  * @property {string} token
  * @property {string} coordinatorPhone
+ * @property {string} projectName
  * @property {string} createdAt
  */
 
@@ -26,6 +27,7 @@ const DB_FILE = 'users.json'
  * @property {() => Coordinator[]} getCoordinators
  * @property {(coordinator: Coordinator) => void} saveCoordinator
  * @property {(phoneNumber: string) => Coordinator|null} findCoordinatorByPhone
+ * @property {(phoneNumber: string) => string|null} findProjectByCoordinatorPhone
  * @property {() => Member[]} getMembers
  * @property {(member: Member) => void} saveMember
  * @property {(phoneNumber: string) => Member|null} findMemberByPhone
@@ -109,6 +111,13 @@ async function dbPlugin(fastify, { dbFolder }) {
         (c) => c.phoneNumber === phoneNumber,
       )
       return coordinator || null
+    },
+
+    findProjectByCoordinatorPhone(phoneNumber) {
+      const coordinator = readDb().coordinators.find(
+        (c) => c.phoneNumber === phoneNumber,
+      )
+      return coordinator ? coordinator.projectName : null
     },
 
     getMembers() {

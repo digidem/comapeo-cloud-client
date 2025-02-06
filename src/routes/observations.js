@@ -4,7 +4,7 @@ import slugify from '@sindresorhus/slugify'
 import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
 import { SUPPORTED_ATTACHMENT_TYPES } from './constants.js'
-import { ensureProjectExists, verifyBearerAuth } from './utils.js'
+import { ensureProjectExists, verifyProjectAuth } from './utils.js'
 
 /** @typedef {import('fastify').FastifyInstance} FastifyInstance */
 /** @typedef {import('fastify').FastifyPluginAsync} FastifyPluginAsync */
@@ -38,7 +38,8 @@ export default async function observationRoutes(
       },
     },
     preHandler: async (req) => {
-      verifyBearerAuth(req, serverBearerToken)
+      const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
+      verifyProjectAuth(req, serverBearerToken, projectPublicId)
       await ensureProjectExists(fastify, /** @type {ProjectRequest} */ (req))
     },
     handler: async (req) => {
@@ -94,7 +95,8 @@ export default async function observationRoutes(
       },
     },
     preHandler: async (req) => {
-      verifyBearerAuth(req, serverBearerToken)
+      const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
+      verifyProjectAuth(req, serverBearerToken, projectPublicId)
       await ensureProjectExists(fastify, /** @type {ProjectRequest} */ (req))
     },
     handler: async (req) => {
@@ -206,7 +208,8 @@ export default async function observationRoutes(
         },
       },
       preHandler: async (req) => {
-        verifyBearerAuth(req, serverBearerToken)
+        const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
+        verifyProjectAuth(req, serverBearerToken, projectPublicId)
         await ensureProjectExists(fastify, /** @type {ProjectRequest} */ (req))
       },
       handler: async (req, reply) => {

@@ -48,3 +48,73 @@ export const verifyBearerAuth = (req, serverBearerToken) => {
     throw errors.invalidBearerToken()
   }
 }
+/**
+ * Verifies authorization for project access
+ * @param {import('fastify').FastifyRequest} req
+ * @param {string} serverBearerToken
+ * @param {string} [projectId]
+ */
+export const verifyProjectAuth = async (req, serverBearerToken, projectId) => {
+  const authHeader = req.headers.authorization
+  // First check if it's a valid server bearer token
+  if (isBearerTokenValid(serverBearerToken, authHeader)) {
+    return
+  }
+
+  // If not server token, must be member or coordinator token
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw errors.invalidBearerToken()
+  }
+
+  const token = authHeader.slice(BEARER_SPACE_LENGTH)
+
+  // Get fastify instance to access db
+  const fastify = /** @type {import('fastify').FastifyInstance} */ (req.server)
+
+  // Ensure projectId is provided to fix the type issue
+  if (!projectId) {
+    throw errors.invalidBearerToken()
+  }
+
+  // Get project details
+  const project = await fastify.comapeo.getProject(projectId)
+  if (!project) {
+    throw errors.projectNotFoundError()
+  }
+
+  const projectSettings = await project.$getProjectSettings()
+  const projectName = projectSettings.name
+
+  // Check if token belongs to a coordinator
+  const coordinator = fastify.db
+    .getCoordinators()
+    .find((c) => c.token === token)
+
+  if (coordinator) {
+    // Verify project name matches
+    if (projectName && coordinator.projectName !== projectName) {
+      console.log('Project name mismatch:', {
+        expected: projectName,
+        actual: coordinator.projectName,
+      })
+      throw errors.unauthorizedError('Invalid project access')
+    }
+    return
+  }
+
+  // Check if token belongs to a member
+  const member = fastify.db.getMembers().find((m) => m.token === token)
+
+  if (member) {
+    // Verify project name matches
+    if (projectName && member.projectName !== projectName) {
+      console.log('Project name mismatch:', {
+        expected: projectName,
+        actual: member.projectName,
+      })
+      throw errors.unauthorizedError('Invalid project access')
+    }
+    return
+  }
+  throw errors.invalidBearerToken()
+}
