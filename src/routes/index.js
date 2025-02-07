@@ -12,7 +12,7 @@ import syncRoutes from './sync.js'
 
 /**
  * @param {import('fastify').FastifyInstance} fastify
- * @param {import('fastify').FastifyPluginOptions & { serverBearerToken: string, serverName: string, allowedProjects?: number | string[] }} opts
+ * @param {import('fastify').FastifyPluginOptions & { serverBearerToken: string, serverName: string, allowedProjects?: number | string[], defaultStorage: string }} opts
  * @typedef {object} RouteOptions
  * @prop {string} serverBearerToken
  * @prop {string} serverName
@@ -26,6 +26,7 @@ export default async function routes(
     serverBearerToken,
     serverName,
     allowedProjects = 1,
+    defaultStorage,
   },
 ) {
   fastify.setErrorHandler((error, _req, reply) => {
@@ -55,6 +56,7 @@ export default async function routes(
     serverBearerToken,
     serverName,
     allowedProjects,
+    defaultStorage,
   })
 
   // Register plugins using the common options where applicable

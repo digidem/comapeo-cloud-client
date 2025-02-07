@@ -7,6 +7,8 @@ import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
 import { ensureProjectExists, verifyProjectAuth } from './utils.js'
 
+const { join } = await import('node:path')
+
 /** @typedef {import('fastify').FastifyInstance} FastifyInstance */
 /** @typedef {import('fastify').FastifyRequest} FastifyRequest */
 /** @typedef {import('fastify').FastifyRequest<{ Params: { projectPublicId: string } }>} ProjectRequest */
@@ -14,11 +16,11 @@ import { ensureProjectExists, verifyProjectAuth } from './utils.js'
 /**
  * Routes for handling attachments.
  * @param {FastifyInstance} fastify
- * @param {{ serverBearerToken: string }} opts
+ * @param {{ serverBearerToken: string, defaultStorage: string }} opts
  */
 export default async function attachmentsRoutes(
   fastify,
-  { serverBearerToken },
+  { serverBearerToken, defaultStorage },
 ) {
   fastify.get(
     '/projects/:projectPublicId/attachments/:driveDiscoveryId/:type/:name',
@@ -97,7 +99,12 @@ export default async function attachmentsRoutes(
       params: Type.Object({ projectPublicId: Type.String() }),
       body: Type.Object({ mediaId: Type.String() }),
       response: {
-        200: Type.Any(),
+        200: Type.Object({
+          driveId: Type.String(),
+          name: Type.String(),
+          type: Type.String(),
+          hash: Type.String(),
+        }),
         '4xx': schemas.errorResponse,
       },
     },
@@ -118,41 +125,37 @@ export default async function attachmentsRoutes(
           req
         ).body
 
-      // Construct WhatsApp API URL and use the token from .env
-      const whatsappUrl = `https://whatsapp.turn.io/v1/media/${mediaId}`
       const token = process.env.WHATSAPP_TOKEN
       if (!token) {
+        console.error('Missing WHATSAPP_TOKEN environment variable')
         throw new Error('WHATSAPP_TOKEN is not set in environment variables')
       }
+
+      const whatsappUrl = `https://whatsapp.turn.io/v1/media/${mediaId}`
       const mediaResponse = await fetch(whatsappUrl, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
+
       if (!mediaResponse.ok) {
+        console.error('WhatsApp API request failed:', {
+          status: mediaResponse.status,
+          statusText: mediaResponse.statusText,
+        })
         reply.code(mediaResponse.status)
         throw new Error(
           `Failed to fetch media from WhatsApp, status: ${mediaResponse.status}`,
         )
       }
-      const arrayBuffer = await mediaResponse.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
 
-      // Determine media folder using DEFAULT_STORAGE from .env and store the file
-      const { join } = await import('node:path')
-      const defaultStorage = process.env.DEFAULT_STORAGE
-      if (!defaultStorage) {
-        throw new Error('DEFAULT_STORAGE is not set in environment variables')
-      }
+      const buffer = Buffer.from(await mediaResponse.arrayBuffer())
       const mediaFolder = join(defaultStorage, 'media')
       if (!existsSync(mediaFolder)) {
         await mkdir(mediaFolder, { recursive: true })
       }
 
-      // Use mediaId as file name with .mp4 extension
-      // Extract file extension from mediaId
       const extension = mediaId.split('.').pop() || ''
-      // Determine mime type based on extension
       const extensionLower = extension.toLowerCase()
       /** @type {Record<string, string>} */
       const mimeTypes = {
@@ -161,35 +164,27 @@ export default async function attachmentsRoutes(
         png: 'image/png',
         gif: 'image/gif',
         svg: 'image/svg+xml',
-        // Audio formats
         mp3: 'audio/mpeg',
         ogg: 'audio/ogg',
         wav: 'audio/wav',
-        // Video formats
         mp4: 'video/mp4',
         webm: 'video/webm',
       }
       const mimeType = mimeTypes[extensionLower] || 'application/octet-stream'
-      const filePath = join(mediaFolder, mediaId) // Use original mediaId with extension
-      await writeFile(filePath, buffer)
 
-      // Build attachment object with file URI and current timestamp
-      const attachment = {
-        uri: new URL(`file://${filePath}`).toString(),
-        createdAt: new Date().toISOString(),
-      }
+      const filePath = join(mediaFolder, mediaId)
+      await writeFile(filePath, buffer)
 
       const project = await fastify.comapeo.getProject(projectPublicId)
       const blobCreationResponse = await project.$blobs.create(
         {
-          original: new URL(attachment.uri).pathname,
+          original: new URL(`file://${filePath}`).pathname,
         },
         {
           mimeType,
-          timestamp: Date.parse(attachment.createdAt),
+          timestamp: Date.now(),
         },
       )
-
       return blobCreationResponse
     },
   })

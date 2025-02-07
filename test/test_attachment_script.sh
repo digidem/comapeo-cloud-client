@@ -55,18 +55,65 @@ echo "Using project ID for attachments test: ${FIRST_PROJECT_ID}"
 echo "✅ Passed"
 echo
 
-# Test GET /projects/:projectPublicId/attachments/:driveDiscoveryId/:type/:name
-# Using dummy values for driveDiscoveryId, type, and name.
-DRIVE_DISCOVERY_ID="testDrive"
-ATTACHMENT_TYPE="image"
-FILE_NAME="test.jpg"
-
-echo "GET /projects/${FIRST_PROJECT_ID}/attachments/${DRIVE_DISCOVERY_ID}/${ATTACHMENT_TYPE}/${FILE_NAME}"
-ATTACHMENT_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" \
-    "${HOST}/projects/${FIRST_PROJECT_ID}/attachments/${DRIVE_DISCOVERY_ID}/${ATTACHMENT_TYPE}/${FILE_NAME}") || (echo "❌ Failed attachments test" && exit 1)
-echo "Response: ${ATTACHMENT_RESPONSE}"
-echo "✅ Passed"
+# Test POST /projects/:projectPublicId/whatsapp/attachments to add an attachment using mediaId "1662360301375693.ogg"
+MEDIA_ID="1662360301375693.ogg"
+echo "POST /projects/${FIRST_PROJECT_ID}/whatsapp/attachments with mediaId ${MEDIA_ID}"
+WHATSAPP_RESPONSE=$(curl -s -f -X POST \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{"mediaId": "'"${MEDIA_ID}"'"}' \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/whatsapp/attachments") || (echo "❌ Failed WhatsApp attachments test" && exit 1)
+echo "Response: ${WHATSAPP_RESPONSE}"
+echo "✅ WhatsApp attachment added"
 echo
+
+# Extract attachment details from the response for GET request
+DRIVE_ID=$(echo "${WHATSAPP_RESPONSE}" | jq -r '.driveId')
+ATTACHMENT_TYPE=$(echo "${WHATSAPP_RESPONSE}" | jq -r '.type')
+FILE_NAME=$(echo "${WHATSAPP_RESPONSE}" | jq -r '.name')
+
+echo "GET /projects/${FIRST_PROJECT_ID}/attachments/${DRIVE_ID}/${ATTACHMENT_TYPE}/${FILE_NAME}"
+ATTACHMENT_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/attachments/${DRIVE_ID}/${ATTACHMENT_TYPE}/${FILE_NAME}") || (echo "❌ Failed attachments GET test" && exit 1)
+echo "Response: ${ATTACHMENT_RESPONSE}"
+echo "✅ GET attachments passed"
+echo
+
+echo "PUT /projects/${FIRST_PROJECT_ID}/observation - create observation"
+OBSERVATION_CREATE_RESPONSE=$(curl -s -f -X PUT \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "lat": 37.7749,
+          "lon": -122.4194,
+          "attachments": []
+        }' \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/observation") || (echo "❌ Failed to create observation" && exit 1)
+echo "Response: ${OBSERVATION_CREATE_RESPONSE}"
+
+OBSERVATION_VERSION_ID=$(echo "${OBSERVATION_CREATE_RESPONSE}" | jq -r '.versionId')
+echo "Created observation with versionId: ${OBSERVATION_VERSION_ID}"
+echo "✅ Observation creation passed"
+echo
+
+echo "PUT /projects/${FIRST_PROJECT_ID}/observation - update observation with attachment"
+OBSERVATION_UPDATE_RESPONSE=$(curl -s -f -X PUT \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "attachments": [
+            {
+              "driveDiscoveryId": "'"${DRIVE_ID}"'",
+              "type": "'"${ATTACHMENT_TYPE}"'",
+              "name": "'"${FILE_NAME}"'"
+            }
+          ]
+        }' \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/observation?versionId=${OBSERVATION_VERSION_ID}") || (echo "❌ Failed to update observation with attachment" && exit 1)
+echo "Response: ${OBSERVATION_UPDATE_RESPONSE}"
+echo "✅ Observation update with attachment passed"
+echo
+
 
 echo "========================"
 echo "🎉 Attachment API tests completed successfully!"
