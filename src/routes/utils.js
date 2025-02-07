@@ -71,15 +71,20 @@ export const verifyProjectAuth = async (req, serverBearerToken, projectId) => {
   // Get fastify instance to access db
   const fastify = /** @type {import('fastify').FastifyInstance} */ (req.server)
 
-  // Ensure projectId is provided to fix the type issue
+  // Ensure projectId is provided
   if (!projectId) {
     throw errors.invalidBearerToken()
   }
 
   // Get project details
-  const project = await fastify.comapeo.getProject(projectId)
+  let project
+  try {
+    project = await fastify.comapeo.getProject(projectId)
+  } catch {
+    throw errors.invalidBearerToken()
+  }
   if (!project) {
-    throw errors.projectNotFoundError()
+    throw errors.invalidBearerToken()
   }
 
   const projectSettings = await project.$getProjectSettings()
@@ -97,7 +102,7 @@ export const verifyProjectAuth = async (req, serverBearerToken, projectId) => {
         expected: projectName,
         actual: coordinator.projectName,
       })
-      throw errors.unauthorizedError('Invalid project access')
+      throw errors.invalidBearerToken()
     }
     return
   }
@@ -112,9 +117,10 @@ export const verifyProjectAuth = async (req, serverBearerToken, projectId) => {
         expected: projectName,
         actual: member.projectName,
       })
-      throw errors.unauthorizedError('Invalid project access')
+      throw errors.invalidBearerToken()
     }
     return
   }
+
   throw errors.invalidBearerToken()
 }
