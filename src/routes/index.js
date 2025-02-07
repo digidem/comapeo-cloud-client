@@ -2,6 +2,7 @@ import { STATUS_CODES } from 'node:http'
 
 import * as errors from '../errors.js'
 import alertsRoutes from './alerts.js'
+import attachmentRoutes from './attachments.js'
 import authRoutes from './auth.js'
 import observationsRoutes from './observations.js'
 import projectsRoutes from './projects.js'
@@ -11,11 +12,12 @@ import syncRoutes from './sync.js'
 
 /**
  * @param {import('fastify').FastifyInstance} fastify
- * @param {import('fastify').FastifyPluginOptions & { serverBearerToken: string, serverName: string, allowedProjects?: number | string[] }} opts
+ * @param {import('fastify').FastifyPluginOptions & { serverBearerToken: string, serverName: string, allowedProjects?: number | string[], defaultStorage: string }} opts
  * @typedef {object} RouteOptions
  * @prop {string} serverBearerToken
  * @prop {string} serverName
  * @prop {undefined | number | string[]} [allowedProjects=1]
+ * @prop {string} defaultStorage
  */
 export default async function routes(
   /** @type {import('fastify').FastifyInstance} */ fastify,
@@ -24,6 +26,7 @@ export default async function routes(
     serverBearerToken,
     serverName,
     allowedProjects = 1,
+    defaultStorage,
   },
 ) {
   fastify.setErrorHandler((error, _req, reply) => {
@@ -53,6 +56,7 @@ export default async function routes(
     serverBearerToken,
     serverName,
     allowedProjects,
+    defaultStorage,
   })
 
   // Register plugins using the common options where applicable
@@ -68,4 +72,5 @@ export default async function routes(
   fastify.register(alertsRoutes, commonOpts)
   fastify.register(syncRoutes, commonOpts)
   fastify.register(authRoutes, commonOpts)
+  fastify.register(attachmentRoutes, commonOpts)
 }

@@ -49,6 +49,7 @@ async function comapeoServer(
     serverBearerToken,
     serverName,
     allowedProjects,
+    defaultStorage,
   })
 }
 

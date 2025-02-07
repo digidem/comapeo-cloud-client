@@ -2,6 +2,9 @@ import { Type } from '@sinclair/typebox'
 
 import { BASE32_STRING_32_BYTES } from './routes/constants.js'
 
+// -----------------------------------------------------------------
+// Constants & Base Types
+// -----------------------------------------------------------------
 const HEX_REGEX_32_BYTES = '^[0-9a-fA-F]{64}$'
 export const HEX_STRING_32_BYTES = Type.String({ pattern: HEX_REGEX_32_BYTES })
 
@@ -9,6 +12,9 @@ const dateTimeString = Type.String({ format: 'date-time' })
 const latitude = Type.Number({ minimum: -90, maximum: 90 })
 const longitude = Type.Number({ minimum: -180, maximum: 180 })
 
+// -----------------------------------------------------------------
+// Error Schema
+// -----------------------------------------------------------------
 export const errorResponse = Type.Object({
   error: Type.Object({
     code: Type.String(),
@@ -16,7 +22,9 @@ export const errorResponse = Type.Object({
   }),
 })
 
-/** @type {import('@sinclair/typebox').TObject} */
+// -----------------------------------------------------------------
+// Project Schemas
+// -----------------------------------------------------------------
 export const projectToAdd = Type.Object({
   projectName: Type.String({ minLength: 1 }),
   projectKey: Type.Optional(HEX_STRING_32_BYTES),
@@ -30,56 +38,19 @@ export const projectToAdd = Type.Object({
     }),
   ),
 })
-
 /** @typedef {import('./types/project.js').ProjectToAdd} ProjectToAdd */
 
+// -----------------------------------------------------------------
+// Attachment Schemas
+// -----------------------------------------------------------------
+export const attachmentSchema = Type.Object({
+  driveDiscoveryId: Type.String(),
+  type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
+  name: Type.String(),
+  hash: Type.Optional(Type.String()),
+})
 /** @typedef {import('@sinclair/typebox').Static<typeof observationToAdd>} ObservationToAdd */
 /** @typedef {{driveDiscoveryId: string, type: 'photo'|'audio', name: string, hash?: string}} Attachment */
-export const observationToAdd = Type.Object({
-  lat: latitude,
-  lon: longitude,
-  attachments: Type.Optional(
-    Type.Array(
-      Type.Object({
-        driveDiscoveryId: Type.String(),
-        type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
-        name: Type.String(),
-      }),
-    ),
-  ),
-  tags: Type.Optional(
-    Type.Record(
-      Type.String(),
-      Type.Union([
-        Type.Boolean(),
-        Type.Number(),
-        Type.String(),
-        Type.Null(),
-        Type.Array(
-          Type.Union([
-            Type.Boolean(),
-            Type.Number(),
-            Type.String(),
-            Type.Null(),
-          ]),
-        ),
-      ]),
-    ),
-  ),
-  metadata: Type.Optional(
-    Type.Object({
-      manualLocation: Type.Boolean(),
-      position: Type.Object({
-        mocked: Type.Boolean(),
-        timestamp: Type.String(),
-        coords: Type.Object({
-          latitude: Type.Number(),
-          longitude: Type.Number(),
-        }),
-      }),
-    }),
-  ),
-})
 
 export const attachmentParams = Type.Object({
   projectPublicId: BASE32_STRING_32_BYTES,
@@ -87,7 +58,6 @@ export const attachmentParams = Type.Object({
   type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
   name: Type.String(),
 })
-
 /** @typedef {import('@sinclair/typebox').Static<typeof attachmentQuerystring>} AttachmentQuerystring */
 export const attachmentQuerystring = Type.Object({
   variant: Type.Optional(
@@ -97,6 +67,38 @@ export const attachmentQuerystring = Type.Object({
       Type.Literal('thumbnail'),
     ]),
   ),
+})
+
+// -----------------------------------------------------------------
+// Observation Schemas
+// -----------------------------------------------------------------
+export const observationToAdd = Type.Object({
+  lat: Type.Number(),
+  lon: Type.Number(),
+  attachments: Type.Optional(
+    Type.Array(
+      Type.Object({
+        driveDiscoveryId: Type.String(),
+        type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
+        name: Type.String(),
+      }),
+    ),
+  ),
+  tags: Type.Optional(Type.Record(Type.String(), Type.String())),
+  metadata: Type.Optional(Type.Object({})),
+})
+
+export const observationToUpdate = Type.Object({
+  attachments: Type.Optional(
+    Type.Array(
+      Type.Object({
+        driveDiscoveryId: Type.String(),
+        type: Type.Union([Type.Literal('photo'), Type.Literal('audio')]),
+        name: Type.String(),
+      }),
+    ),
+  ),
+  tags: Type.Optional(Type.Record(Type.String(), Type.String())),
 })
 
 export const observationResult = Type.Object({
@@ -125,6 +127,9 @@ export const observationResult = Type.Object({
   ),
 })
 
+// -----------------------------------------------------------------
+// Remote Detection Alert Schemas
+// -----------------------------------------------------------------
 const position = Type.Tuple([longitude, latitude])
 
 const remoteDetectionAlertCommon = {

@@ -141,8 +141,8 @@ PROJECT_ID=${FIRST_PROJECT_ID}
 echo "Using project ID: ${PROJECT_ID}"
 echo
 
-# Test PUT /projects/:projectId/observation
-echo "PUT /projects/${PROJECT_ID}/observation"
+# Test PUT /projects/:projectId/observation - create
+echo "PUT /projects/${PROJECT_ID}/observation - create"
 echo "-------------------------------------"
 RESPONSE=$(curl -s -f -X PUT \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
@@ -158,15 +158,65 @@ echo "Response: ${RESPONSE}"
 echo "✅ Passed"
 echo
 
-# Test GET /projects/:projectId/observations
-echo "GET /projects/${PROJECT_ID}/observations"
-echo "--------------------------------------"
-RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" \
-    "${HOST}/projects/${PROJECT_ID}/observations")
+# Get versionId from response
+# Parse response JSON to extract versionId
+VERSION_ID=$(echo "${RESPONSE}" | jq -r '.versionId')
+echo "Using version ID: ${VERSION_ID}"
+
+# Test PUT /projects/:projectId/observation - update
+echo "PUT /projects/${PROJECT_ID}/observation - update"
+echo "-------------------------------------"
+RESPONSE=$(curl -s -f -X PUT \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "tags": {
+            "notes": "Updated observation",
+            "category": "test"
+        }
+    }' \
+    "${HOST}/projects/${PROJECT_ID}/observation?versionId=${VERSION_ID}") || (echo "❌ Failed" && exit 1)
 echo "Response: ${RESPONSE}"
 echo "✅ Passed"
 echo
 
+# Test GET /projects/:projectId/observations (Before Deletion)
+echo "GET /projects/${PROJECT_ID}/observations (Before Deletion)"
+echo "--------------------------------------"
+RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects/${PROJECT_ID}/observations")
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Extract the first observation's ID to delete from the response
+OBSERVATION_ID=$(echo "${RESPONSE}" | jq -r '.data[0].docId')
+echo "Observation to delete: ${OBSERVATION_ID}"
+echo
+
+# Test DELETE /projects/:projectId/observations/:observationId
+echo "DELETE /projects/${PROJECT_ID}/observations/${OBSERVATION_ID}"
+echo "--------------------------------------"
+DELETE_RESPONSE=$(curl -s -f -X DELETE -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects/${PROJECT_ID}/observations/${OBSERVATION_ID}")
+echo "Response: ${DELETE_RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Test GET /projects/:projectId/observations (After Deletion)
+echo "GET /projects/${PROJECT_ID}/observations (After Deletion)"
+echo "--------------------------------------"
+RESPONSE_AFTER=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects/${PROJECT_ID}/observations")
+echo "Response (all observations): ${RESPONSE_AFTER}"
+echo
+
+# Verify that the deleted observation is not present in the list
+echo "Verifying that deleted observation is marked as deleted..."
+if echo "${RESPONSE_AFTER}" | jq -e --arg id "$OBSERVATION_ID" '.data | map(select(.docId == $id and .deleted == true)) | length > 0' > /dev/null; then
+  echo "✅ Verified: Deleted observation ${OBSERVATION_ID} is marked as deleted."
+else
+  echo "❌ Error: Deleted observation ${OBSERVATION_ID} is not marked as deleted!"
+  exit 1
+fi
+echo
 # Test POST /projects/:projectId/remoteDetectionAlerts
 echo "POST /projects/${PROJECT_ID}/remoteDetectionAlerts"
 echo "-----------------------------------------------"

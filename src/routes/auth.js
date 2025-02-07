@@ -211,6 +211,17 @@ export default async function authRoutes(fastify, opts) {
           `Found coordinator with phone: ${coordinator.phoneNumber}`,
         )
 
+        // Get project name for coordinator
+        const projectName =
+          fastify.db.findProjectByCoordinatorPhone(coordPhoneNumber)
+        if (!projectName) {
+          fastify.log.warn(
+            `No project found for coordinator: ${coordPhoneNumber}`,
+          )
+          throw errors.unauthorizedError('No project found for coordinator')
+        }
+        fastify.log.info(`Found project: ${projectName} for coordinator`)
+
         // Verify bearer token matches coordinator's token
         verifyBearerAuth(req, coordinator.token)
 
@@ -243,6 +254,7 @@ export default async function authRoutes(fastify, opts) {
           phoneNumber: memberPhoneNumber,
           token: memberToken,
           coordinatorPhone: coordinator.phoneNumber,
+          projectName,
           createdAt: new Date().toISOString(),
         })
         fastify.log.info(
@@ -252,6 +264,7 @@ export default async function authRoutes(fastify, opts) {
         return {
           data: {
             token: memberToken,
+            projectName,
           },
         }
       } catch (err) {

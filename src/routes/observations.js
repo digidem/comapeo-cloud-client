@@ -1,9 +1,10 @@
 import { Type } from '@sinclair/typebox'
+import slugify from '@sindresorhus/slugify'
 
 import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
 import { SUPPORTED_ATTACHMENT_TYPES } from './constants.js'
-import { ensureProjectExists, verifyBearerAuth } from './utils.js'
+import { ensureProjectExists, verifyProjectAuth } from './utils.js'
 
 /** @typedef {import('fastify').FastifyInstance} FastifyInstance */
 /** @typedef {import('fastify').FastifyPluginAsync} FastifyPluginAsync */
@@ -11,6 +12,7 @@ import { ensureProjectExists, verifyBearerAuth } from './utils.js'
 /** @typedef {import('fastify').RawServerDefault} RawServerDefault */
 /** @typedef {import('fastify').FastifyRequest<{Params: {projectPublicId: string}}>} ProjectRequest */
 /** @typedef {import('../schemas.js').ObservationToAdd} ObservationToAdd */
+/** @typedef {import('../schemas.js').observationToUpdate} ObservationToUpdate */
 /** @typedef {import('../schemas.js').AttachmentQuerystring} AttachmentQuerystring */
 
 /**
@@ -35,8 +37,14 @@ export default async function observationRoutes(
         '4xx': schemas.errorResponse,
       },
     },
-    preHandler: async (req) => {
-      verifyBearerAuth(req, serverBearerToken)
+    preHandler: async (req, reply) => {
+      const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
+      try {
+        await verifyProjectAuth(req, serverBearerToken, projectPublicId)
+      } catch {
+        reply.code(401)
+        throw errors.invalidBearerToken()
+      }
       await ensureProjectExists(fastify, /** @type {ProjectRequest} */ (req))
     },
     handler: async (req) => {
@@ -78,30 +86,110 @@ export default async function observationRoutes(
       params: Type.Object({
         projectPublicId: Type.String(),
       }),
-      body: schemas.observationToAdd,
+      querystring: Type.Object({
+        versionId: Type.Optional(Type.String()),
+        category: Type.Optional(Type.String()),
+        locale: Type.Optional(Type.String()),
+      }),
+      body: Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
       response: {
-        201: Type.Literal(''),
+        200: Type.Object({
+          versionId: Type.String(),
+        }),
         '4xx': schemas.errorResponse,
       },
     },
-    preHandler: async (req) => {
-      verifyBearerAuth(req, serverBearerToken)
+    preHandler: async (req, reply) => {
+      const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
+      try {
+        await verifyProjectAuth(req, serverBearerToken, projectPublicId)
+      } catch {
+        reply.code(401)
+        throw errors.invalidBearerToken()
+      }
       await ensureProjectExists(fastify, /** @type {ProjectRequest} */ (req))
     },
     handler: async (req) => {
       const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
-      const body = /** @type {ObservationToAdd} */ (req.body)
+      const { versionId, category, locale } =
+        /** @type {import('fastify').FastifyRequest<{Querystring: {versionId?: string, category?: string, locale?: string}}>} */ (
+          req
+        ).query
       const project = await fastify.comapeo.getProject(projectPublicId)
+
+      let preset
+      if (category) {
+        const presets = await project.preset.getMany({ lang: locale || 'en' })
+        preset = presets.find(
+          (p) =>
+            slugify(p.name, { lowercase: true }) ===
+            slugify(category, { lowercase: true }),
+        )
+        if (!preset) {
+          throw errors.badRequestError(`Category "${category}" not found`)
+        }
+      }
+
+      if (versionId) {
+        // Update existing observation
+        const body = /** @type {Record<string, any>} */ (req.body)
+
+        // Explicitly reject lat/lon in updates
+        if ('lat' in body || 'lon' in body) {
+          throw errors.badRequestError(
+            'Cannot update lat/lon of existing observation',
+          )
+        }
+
+        const observationData = {
+          schemaName: /** @type {const} */ ('observation'),
+          attachments: (body.attachments || []).map(
+            (/** @type {import('../schemas.js').Attachment} */ attachment) => ({
+              ...attachment,
+              hash: '',
+            }),
+          ),
+          tags: {
+            ...(preset ? preset.tags : {}),
+            ...(body.tags || {}),
+          },
+          ...(preset && {
+            presetRef: {
+              docId: preset.docId,
+              versionId: preset.versionId,
+            },
+          }),
+        }
+
+        return await project.observation.update(versionId, observationData)
+      }
+
+      // Create new observation
+      const body = /** @type {Record<string, any>} */ (req.body)
+
+      if (typeof body.lat !== 'number' || typeof body.lon !== 'number') {
+        throw errors.badRequestError(
+          'lat and lon are required for new observations',
+        )
+      }
 
       const observationData = {
         schemaName: /** @type {const} */ ('observation'),
         lat: body.lat,
         lon: body.lon,
-        attachments: (body.attachments || []).map((attachment) => ({
-          ...attachment,
-          hash: '', // Required by schema but not used
-        })),
-        tags: body.tags || {},
+        attachments: (body.attachments || []).map(
+          (/** @type {import('../schemas.js').Attachment} */ attachment) => ({
+            ...attachment,
+            hash: '',
+          }),
+        ),
+        presetRef: preset
+          ? { docId: preset.docId, versionId: preset.versionId }
+          : void 0,
+        tags: {
+          ...(preset ? preset.tags : {}),
+          ...(body.tags || {}),
+        },
         metadata: body.metadata || {
           manualLocation: false,
           position: {
@@ -115,74 +203,45 @@ export default async function observationRoutes(
         },
       }
 
-      const response = await project.observation.create(observationData)
-      return response
+      return await project.observation.create(observationData)
     },
   })
-
-  fastify.get(
-    '/projects/:projectPublicId/attachments/:driveDiscoveryId/:type/:name',
-    {
-      schema: {
-        params: schemas.attachmentParams,
-        querystring: schemas.attachmentQuerystring,
-        response: {
-          200: {},
-          '4xx': schemas.errorResponse,
-        },
-      },
-      preHandler: async (req) => {
-        verifyBearerAuth(req, serverBearerToken)
-        await ensureProjectExists(fastify, /** @type {ProjectRequest} */ (req))
-      },
-      handler: async (req, reply) => {
-        const { projectPublicId, driveDiscoveryId, type, name } =
-          /** @type {import('fastify').FastifyRequest<{Params: import('@sinclair/typebox').Static<typeof schemas.attachmentParams>}>} */ (
-            req
-          ).params
-        const { variant } =
-          /** @type {import('fastify').FastifyRequest<{Querystring: import('@sinclair/typebox').Static<typeof schemas.attachmentQuerystring>}>} */ (
-            req
-          ).query
-        const project = await fastify.comapeo.getProject(projectPublicId)
-
-        let typeAndVariant
-        switch (type) {
-          case 'photo':
-            typeAndVariant = {
-              type: /** @type {const} */ ('photo'),
-              variant: variant || 'original',
-            }
-            break
-          case 'audio':
-            if (variant && variant !== 'original') {
-              throw errors.badRequestError(
-                'Cannot fetch this variant for audio attachments',
-              )
-            }
-            typeAndVariant = {
-              type: /** @type {const} */ ('audio'),
-              variant: /** @type {const} */ ('original'),
-            }
-            break
-          default:
-            throw errors.shouldBeImpossibleError(/** @type {never} */ (type))
-        }
-
-        const blobUrl = await project.$blobs.getUrl({
-          driveId: driveDiscoveryId,
-          name,
-          ...typeAndVariant,
-        })
-
-        const proxiedResponse = await fetch(blobUrl)
-        reply.code(proxiedResponse.status)
-        // @ts-ignore
-        for (const [headerName, headerValue] of proxiedResponse.headers) {
-          reply.header(headerName, headerValue)
-        }
-        return reply.send(proxiedResponse.body)
+  fastify.delete('/projects/:projectPublicId/observations/:observationId', {
+    schema: {
+      params: Type.Object({
+        projectPublicId: Type.String(),
+        observationId: Type.String(),
+      }),
+      response: {
+        200: Type.Any(),
+        '4xx': schemas.errorResponse,
       },
     },
-  )
+    preHandler: async (req, reply) => {
+      const { projectPublicId } =
+        /** @type {import('fastify').FastifyRequest<{ Params: { projectPublicId: string, observationId: string } }>} */ (
+          req
+        ).params
+      try {
+        await verifyProjectAuth(req, serverBearerToken, projectPublicId)
+      } catch {
+        reply.code(401)
+        throw errors.invalidBearerToken()
+      }
+      await ensureProjectExists(
+        fastify,
+        /** @type {import('fastify').FastifyRequest<{ Params: { projectPublicId: string, observationId: string } }>} */ (
+          req
+        ),
+      )
+    },
+    handler: async (req) => {
+      const { projectPublicId, observationId } =
+        /** @type {import('fastify').FastifyRequest<{ Params: { projectPublicId: string, observationId: string } }>} */ (
+          req
+        ).params
+      const project = await fastify.comapeo.getProject(projectPublicId)
+      return await project.observation.delete(observationId)
+    },
+  })
 }
