@@ -55,7 +55,7 @@ const DB_FILE = 'users.json'
  * @param {string} t - The bearer token string.
  * @returns {string} The token without the 'Bearer ' prefix.
  */
-function getToken(t) {
+export function getToken(t) {
   if (!t) return ''
   if (!t.includes('Bearer')) return t
   return t.slice(BEARER_SPACE_LENGTH)
