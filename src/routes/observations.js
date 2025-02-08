@@ -87,6 +87,7 @@ export default async function observationRoutes(
         projectPublicId: Type.String(),
       }),
       querystring: Type.Object({
+        docId: Type.Optional(Type.String()),
         versionId: Type.Optional(Type.String()),
         category: Type.Optional(Type.String()),
         locale: Type.Optional(Type.String()),
@@ -111,8 +112,8 @@ export default async function observationRoutes(
     },
     handler: async (req) => {
       const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
-      const { versionId, category, locale } =
-        /** @type {import('fastify').FastifyRequest<{Querystring: {versionId?: string, category?: string, locale?: string}}>} */ (
+      const { docId, versionId, category, locale } =
+        /** @type {import('fastify').FastifyRequest<{Querystring: {docId?: string, versionId?: string, category?: string, locale?: string}}>} */ (
           req
         ).query
       const project = await fastify.comapeo.getProject(projectPublicId)
@@ -130,7 +131,18 @@ export default async function observationRoutes(
         }
       }
 
-      if (versionId) {
+      let effectiveVersionId = versionId
+      if (!effectiveVersionId && docId) {
+        const detailedObs = await project.observation.getByDocId(docId)
+        if (!detailedObs) {
+          throw errors.notFoundError(
+            'Observation with provided docId not found',
+          )
+        }
+        effectiveVersionId = detailedObs.versionId
+      }
+
+      if (effectiveVersionId) {
         // Update existing observation
         const body = /** @type {Record<string, any>} */ (req.body)
 
@@ -161,7 +173,10 @@ export default async function observationRoutes(
           }),
         }
 
-        return await project.observation.update(versionId, observationData)
+        return await project.observation.update(
+          effectiveVersionId,
+          observationData,
+        )
       }
 
       // Create new observation
