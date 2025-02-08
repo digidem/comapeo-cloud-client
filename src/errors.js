@@ -43,6 +43,10 @@ export const tooManyProjects = () =>
 export const projectNotFoundError = () =>
   new HttpError(404, 'PROJECT_NOT_FOUND', 'Project not found')
 
+/** @param {string} message */
+export const notFoundError = (message) =>
+  new HttpError(404, 'NOT_FOUND', message)
+
 /** @param {never} value */
 export const shouldBeImpossibleError = (value) =>
   new Error(`${value} should be impossible`)

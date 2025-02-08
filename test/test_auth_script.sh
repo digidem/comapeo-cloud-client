@@ -27,8 +27,39 @@ echo "🧪 Starting AUTH API Tests..."
 echo "========================"
 echo
 
-# Test POST /auth/register with existing number (should fail)
-echo "POST /auth/register with existing number"
+# Test POST /auth/register with new random number
+echo "POST /auth/register with new number"
+echo "----------------------------------------"
+RESPONSE=$(curl -s -f -X POST \
+  "${HOST}/auth/register" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${BEARER_TOKEN}" \
+  -d '{
+    "phoneNumber": "'"${RANDOM_PHONE}"'",
+    "projectName": "'"${PROJECT_NAME} 1"'"
+  }')
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Test POST /auth/register with same random number
+echo "POST /auth/register with same number"
+echo "----------------------------------------"
+RESPONSE=$(curl -s -f -X POST \
+  "${HOST}/auth/register" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${BEARER_TOKEN}" \
+  -d '{
+    "phoneNumber": "'"${RANDOM_PHONE}"'",
+    "projectName": "'"${PROJECT_NAME}"'"
+  }')
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+
+# Test POST /auth/register with existing project name (should fail)
+echo "POST /auth/register with existing project name"
 echo "----------------------------------------"
 if curl -s -f -X POST \
   "${HOST}/auth/register" \
@@ -45,8 +76,39 @@ else
 fi
 echo
 
-# Test POST /auth/register with new random number
-echo "POST /auth/register with new number"
+# Test DELETE /auth/unregister with invalid phone number
+echo "DELETE /auth/unregister with invalid phone"
+echo "----------------------------------------"
+if curl -s -f -X DELETE \
+  "${HOST}/auth/unregister" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${BEARER_TOKEN}" \
+  -d '{
+    "phoneNumber": "+999999999"
+  }' 2>/dev/null; then
+  echo "❌ Failed: Request should have failed for non-existent number"
+  exit 1
+else
+  echo "✅ Passed: Request failed as expected for non-existent number"
+fi
+echo
+
+# Test DELETE /auth/unregister with valid phone number
+echo "DELETE /auth/unregister with valid phone"
+echo "----------------------------------------"
+RESPONSE=$(curl -s -f -X DELETE \
+  "${HOST}/auth/unregister" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${BEARER_TOKEN}" \
+  -d '{
+    "phoneNumber": "'"${RANDOM_PHONE}"'"
+  }')
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
+# Verify coordinator was deleted by trying to register with same number again
+echo "POST /auth/register to verify coordinator was deleted"
 echo "----------------------------------------"
 RESPONSE=$(curl -s -f -X POST \
   "${HOST}/auth/register" \
@@ -57,7 +119,7 @@ RESPONSE=$(curl -s -f -X POST \
     "projectName": "'"${PROJECT_NAME}"'"
   }')
 echo "Response: ${RESPONSE}"
-echo "✅ Passed"
+echo "✅ Passed: Successfully re-registered deleted coordinator"
 echo
 
 # Create project for the registered coordinator
@@ -94,6 +156,7 @@ if ! echo "${RESPONSE}" | jq -e ".data[] | select(.name == \"${PROJECT_NAME}\")"
 fi
 echo "✅ Passed: Project exists"
 echo
+
 # Test POST /auth/coordinator with new number
 echo "POST /auth/coordinator"
 echo "------------------------------------------"

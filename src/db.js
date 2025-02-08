@@ -26,8 +26,10 @@ const DB_FILE = 'users.json'
  * @typedef {Object} DBMethods
  * @property {() => Coordinator[]} getCoordinators
  * @property {(coordinator: Coordinator) => void} saveCoordinator
+ * @property {(phoneNumber: string) => void} deleteCoordinatorByPhone
  * @property {(phoneNumber: string) => Coordinator|null} findCoordinatorByPhone
  * @property {(phoneNumber: string) => string|null} findProjectByCoordinatorPhone
+ * @property {(projectName: string) => Coordinator|null} findCoordinatorByProject
  * @property {() => Member[]} getMembers
  * @property {(member: Member) => void} saveMember
  * @property {(phoneNumber: string) => Member|null} findMemberByPhone
@@ -106,6 +108,14 @@ async function dbPlugin(fastify, { dbFolder }) {
       writeDb(data)
     },
 
+    deleteCoordinatorByPhone(phoneNumber) {
+      const data = readDb()
+      data.coordinators = data.coordinators.filter(
+        (c) => c.phoneNumber !== phoneNumber,
+      )
+      writeDb(data)
+    },
+
     findCoordinatorByPhone(phoneNumber) {
       const coordinator = readDb().coordinators.find(
         (c) => c.phoneNumber === phoneNumber,
@@ -118,6 +128,13 @@ async function dbPlugin(fastify, { dbFolder }) {
         (c) => c.phoneNumber === phoneNumber,
       )
       return coordinator ? coordinator.projectName : null
+    },
+
+    findCoordinatorByProject(projectName) {
+      const coordinator = readDb().coordinators.find(
+        (c) => c.projectName === projectName,
+      )
+      return coordinator || null
     },
 
     getMembers() {

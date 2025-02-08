@@ -60,12 +60,19 @@ export default async function authRoutes(fastify, opts) {
 
       // Check if coordinator already exists
       const existingCoordinator = fastify.db.findCoordinatorByPhone(phoneNumber)
-      if (existingCoordinator) {
+      if (existingCoordinator?.token) {
         fastify.log.warn(`Coordinator already exists for phone: ${phoneNumber}`)
         throw errors.conflictError('Phone number already registered')
       }
 
       // Check if project name already exists
+      const existingProjectCoordinator =
+        fastify.db.findCoordinatorByProject(projectName)
+      if (existingProjectCoordinator) {
+        fastify.log.warn(`Project name already exists: ${projectName}`)
+        throw errors.conflictError('Project name already exists')
+      }
+
       const projects = await fastify.comapeo.listProjects()
       const existingProject = projects.find((p) => p.name === projectName)
       if (existingProject) {
@@ -87,6 +94,53 @@ export default async function authRoutes(fastify, opts) {
         data: {
           phoneNumber: coordinator.phoneNumber,
           projectName: coordinator.projectName,
+        },
+      }
+    },
+  )
+  // DELETE /auth/unregister
+  fastify.delete(
+    '/auth/unregister',
+    {
+      schema: {
+        body: Type.Object({
+          phoneNumber: Type.String(),
+        }),
+        response: {
+          200: Type.Object({
+            data: Type.Object({
+              message: Type.String(),
+            }),
+          }),
+          '4xx': schemas.errorResponse,
+        },
+      },
+      async preHandler(req) {
+        verifyBearerAuth(req, serverBearerToken)
+      },
+    },
+    async (req) => {
+      const { phoneNumber } =
+        /** @type {import('fastify').FastifyRequest<{Body: {phoneNumber: string}}>} */ (
+          req
+        ).body
+
+      fastify.log.info(`Attempting to unregister coordinator: ${phoneNumber}`)
+
+      // Check if coordinator exists
+      const coordinator = fastify.db.findCoordinatorByPhone(phoneNumber)
+      if (!coordinator) {
+        fastify.log.warn(`No coordinator found for phone: ${phoneNumber}`)
+        throw errors.notFoundError('Coordinator not found')
+      }
+
+      // Delete coordinator
+      fastify.db.deleteCoordinatorByPhone(phoneNumber)
+      fastify.log.info(`Successfully unregistered coordinator: ${phoneNumber}`)
+
+      return {
+        data: {
+          message: 'Coordinator successfully unregistered',
         },
       }
     },
