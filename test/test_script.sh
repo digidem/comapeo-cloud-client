@@ -212,6 +212,13 @@ OBSERVATION_ID=$(echo "${RESPONSE}" | jq -r '.data[0].docId')
 echo "Observation to delete: ${OBSERVATION_ID}"
 echo
 
+echo "GET /projects/${PROJECT_ID}/observation/${OBSERVATION_ID}"
+echo "--------------------------------------"
+RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" "${HOST}/projects/${PROJECT_ID}/observation/${OBSERVATION_ID}") || (echo "❌ Failed to fetch observation by docId" && exit 1)
+echo "Response: ${RESPONSE}"
+echo "✅ Passed: Fetched observation by docId"
+echo
+
 # Test DELETE /projects/:projectId/observations/:observationId
 echo "DELETE /projects/${PROJECT_ID}/observations/${OBSERVATION_ID}"
 echo "--------------------------------------"
