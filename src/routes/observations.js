@@ -25,6 +25,69 @@ export default async function observationRoutes(
   fastify,
   { serverBearerToken },
 ) {
+  fastify.get('/projects/:projectPublicId/observation/:docId', {
+    schema: {
+      params: Type.Object({
+        projectPublicId: Type.String(),
+        docId: Type.String(),
+      }),
+      response: {
+        200: Type.Object({
+          data: schemas.observationResult,
+        }),
+        404: schemas.errorResponse,
+        '4xx': schemas.errorResponse,
+      },
+    },
+    preHandler: async (req, reply) => {
+      const { projectPublicId } = /** @type {ProjectRequest} */ (req).params
+      try {
+        await verifyProjectAuth(req, serverBearerToken, projectPublicId)
+      } catch {
+        reply.code(401)
+        throw errors.invalidBearerToken()
+      }
+      await ensureProjectExists(fastify, /** @type {ProjectRequest} */ (req))
+    },
+    handler: async (req) => {
+      const { projectPublicId, docId } =
+        /** @type {import('fastify').FastifyRequest<{ Params: { projectPublicId: string, docId: string } }>} */ (
+          req
+        ).params
+      const project = await fastify.comapeo.getProject(projectPublicId)
+
+      const observation = await project.observation.getByDocId(docId)
+      if (!observation) {
+        throw errors.notFoundError('Observation not found')
+      }
+
+      return {
+        data: {
+          docId: observation.docId,
+          createdAt: observation.createdAt,
+          updatedAt: observation.updatedAt,
+          deleted: observation.deleted,
+          lat: observation.lat,
+          lon: observation.lon,
+          attachments: observation.attachments
+            .filter((attachment) =>
+              SUPPORTED_ATTACHMENT_TYPES.has(
+                /** @type {import('../schemas.js').Attachment['type']} */ (
+                  attachment.type
+                ),
+              ),
+            )
+            .map((attachment) => ({
+              url: new URL(
+                `projects/${projectPublicId}/attachments/${attachment.driveDiscoveryId}/${attachment.type}/${attachment.name}`,
+                req.baseUrl,
+              ).href,
+            })),
+          tags: observation.tags,
+        },
+      }
+    },
+  })
   fastify.get('/projects/:projectPublicId/observations', {
     schema: {
       params: Type.Object({
