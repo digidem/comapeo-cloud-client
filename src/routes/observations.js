@@ -96,6 +96,7 @@ export default async function observationRoutes(
       response: {
         200: Type.Object({
           versionId: Type.String(),
+          docId: Type.String(),
         }),
         '4xx': schemas.errorResponse,
       },
@@ -217,7 +218,6 @@ export default async function observationRoutes(
           },
         },
       }
-
       return await project.observation.create(observationData)
     },
   })

@@ -161,6 +161,7 @@ echo
 # Get versionId from response
 # Parse response JSON to extract versionId
 VERSION_ID=$(echo "${RESPONSE}" | jq -r '.versionId')
+DOC_ID=$(echo "${RESPONSE}" | jq -r '.docId')
 echo "Using version ID: ${VERSION_ID}"
 
 # Test PUT /projects/:projectId/observation - update
@@ -179,6 +180,24 @@ RESPONSE=$(curl -s -f -X PUT \
 echo "Response: ${RESPONSE}"
 echo "✅ Passed"
 echo
+
+# Test PUT /projects/:projectId/observation - update using docId
+echo "PUT /projects/${PROJECT_ID}/observation - update using docId"
+echo "-------------------------------------"
+RESPONSE=$(curl -s -f -X PUT \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "tags": {
+            "notes": "Updated observation",
+            "category": "test"
+        }
+    }' \
+    "${HOST}/projects/${PROJECT_ID}/observation?docId=${DOC_ID}") || (echo "❌ Failed" && exit 1)
+echo "Response: ${RESPONSE}"
+echo "✅ Passed"
+echo
+
 
 # Test GET /projects/:projectId/observations (Before Deletion)
 echo "GET /projects/${PROJECT_ID}/observations (Before Deletion)"
