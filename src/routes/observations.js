@@ -251,10 +251,15 @@ export default async function observationRoutes(
           ),
         ]
 
-        // Fix for the schemaName type issue in update
+        // Fix location overwrite issue in updates
         const updateData = {
           schemaName: /** @type {'observation'} */ ('observation'),
+          // Keep original lat/lon values
+          lat: existingObs.lat,
+          lon: existingObs.lon,
+          // Merge existing and new attachments
           attachments: mergedAttachments,
+          // Merge existing and new tags
           tags: mergedTags,
           ...(preset && {
             presetRef: {
