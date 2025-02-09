@@ -16,6 +16,7 @@ import { ensureProjectExists, verifyProjectAuth } from './utils.js'
 /** @typedef {import('../schemas.js').ObservationToAdd} ObservationToAdd */
 /** @typedef {import('../schemas.js').observationToUpdate} ObservationToUpdate */
 /** @typedef {import('../schemas.js').AttachmentQuerystring} AttachmentQuerystring */
+/** @typedef {import('../schemas.js').Attachment} Attachment */
 
 /**
  * Routes for handling observations
@@ -208,9 +209,14 @@ export default async function observationRoutes(
         effectiveVersionId = detailedObs.versionId
       }
 
+      // Fix for the docId type error by adding null check
       if (effectiveVersionId) {
-        // Update existing observation
         const body = /** @type {Record<string, any>} */ (req.body)
+
+        // eslint-disable-next-line no-undefined
+        if (docId === undefined) {
+          throw errors.badRequestError('docId is required for updates')
+        }
 
         // Explicitly reject lat/lon in updates
         if ('lat' in body || 'lon' in body) {
@@ -219,18 +225,35 @@ export default async function observationRoutes(
           )
         }
 
-        const observationData = {
-          schemaName: /** @type {const} */ ('observation'),
-          attachments: (body.attachments || []).map(
-            (/** @type {import('../schemas.js').Attachment} */ attachment) => ({
+        // Retrieve the existing observation to merge tags/attachments
+        const existingObs = await project.observation.getByDocId(docId)
+        if (!existingObs) {
+          throw errors.notFoundError(
+            'Observation with provided docId not found',
+          )
+        }
+
+        const mergedTags = {
+          ...existingObs.tags, // keep current tags
+          ...(preset ? preset.tags : {}), // preset tags if any
+          ...(body.tags || {}), // override with provided tags
+        }
+
+        const mergedAttachments = [
+          ...existingObs.attachments, // keep current attachments
+          ...(body.attachments || []).map(
+            (/** @type {Attachment} */ attachment) => ({
               ...attachment,
               hash: crypto.randomBytes(32).toString('hex'),
             }),
           ),
-          tags: {
-            ...(preset ? preset.tags : {}),
-            ...(body.tags || {}),
-          },
+        ]
+
+        // Fix for the schemaName type issue in update
+        const updateData = {
+          schemaName: /** @type {'observation'} */ ('observation'),
+          attachments: mergedAttachments,
+          tags: mergedTags,
           ...(preset && {
             presetRef: {
               docId: preset.docId,
@@ -239,10 +262,7 @@ export default async function observationRoutes(
           }),
         }
 
-        return await project.observation.update(
-          effectiveVersionId,
-          observationData,
-        )
+        return await project.observation.update(effectiveVersionId, updateData)
       }
 
       // Create new observation
@@ -254,12 +274,13 @@ export default async function observationRoutes(
         )
       }
 
+      // Fix for the attachment parameter typing
       const observationData = {
-        schemaName: /** @type {const} */ ('observation'),
+        schemaName: /** @type {'observation'} */ ('observation'),
         lat: body.lat,
         lon: body.lon,
         attachments: (body.attachments || []).map(
-          (/** @type {import('../schemas.js').Attachment} */ attachment) => ({
+          (/** @type {Attachment} */ attachment) => ({
             ...attachment,
             hash: crypto.randomBytes(32).toString('hex'),
           }),
