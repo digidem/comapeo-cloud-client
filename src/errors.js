@@ -59,6 +59,10 @@ export const unauthorizedError = (message) =>
 export const conflictError = (message) =>
   new HttpError(409, 'CONFLICT', message)
 
+/** @param {string} message */
+export const tooManyMagicLinks = (message) =>
+  new HttpError(429, 'TOO MANY MAGIC-LINKS', message)
+
 /**
  * @param {string} str
  * @returns {string}
