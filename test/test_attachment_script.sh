@@ -55,30 +55,55 @@ echo "Using project ID for attachments test: ${FIRST_PROJECT_ID}"
 echo "✅ Passed"
 echo
 
-# Test POST /projects/:projectPublicId/whatsapp/attachments to add an attachment using mediaId "1662360301375693.ogg"
-MEDIA_ID="1662360301375693.ogg"
-echo "POST /projects/${FIRST_PROJECT_ID}/whatsapp/attachments with mediaId ${MEDIA_ID}"
-WHATSAPP_RESPONSE=$(curl -s -f -X POST \
+# Test POST /projects/:projectPublicId/whatsapp/attachments for audio attachment using mediaId "1662360301375693.ogg"
+MEDIA_ID_AUDIO="1662360301375693.ogg"
+echo "POST /projects/${FIRST_PROJECT_ID}/whatsapp/attachments with audio mediaId ${MEDIA_ID_AUDIO}"
+WHATSAPP_RESPONSE_AUDIO=$(curl -s -f -X POST \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
     -H "Content-Type: application/json" \
-    -d '{"mediaId": "'"${MEDIA_ID}"'"}' \
-    "${HOST}/projects/${FIRST_PROJECT_ID}/whatsapp/attachments") || (echo "❌ Failed WhatsApp attachments test" && exit 1)
-echo "Response: ${WHATSAPP_RESPONSE}"
-echo "✅ WhatsApp attachment added"
+    -d '{"mediaId": "'"${MEDIA_ID_AUDIO}"'"}' \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/whatsapp/attachments") || (echo "❌ Failed WhatsApp audio attachments test" && exit 1)
+echo "Response: ${WHATSAPP_RESPONSE_AUDIO}"
+echo "✅ Audio WhatsApp attachment added"
 echo
 
-# Extract attachment details from the response for GET request
-DRIVE_ID=$(echo "${WHATSAPP_RESPONSE}" | jq -r '.driveId')
-ATTACHMENT_TYPE=$(echo "${WHATSAPP_RESPONSE}" | jq -r '.type')
-FILE_NAME=$(echo "${WHATSAPP_RESPONSE}" | jq -r '.name')
+# Extract attachment details from the audio response for GET request
+AUDIO_DRIVE_ID=$(echo "${WHATSAPP_RESPONSE_AUDIO}" | jq -r '.driveId')
+AUDIO_ATTACHMENT_TYPE=$(echo "${WHATSAPP_RESPONSE_AUDIO}" | jq -r '.type')
+AUDIO_FILE_NAME=$(echo "${WHATSAPP_RESPONSE_AUDIO}" | jq -r '.name')
 
-echo "GET /projects/${FIRST_PROJECT_ID}/attachments/${DRIVE_ID}/${ATTACHMENT_TYPE}/${FILE_NAME}"
-ATTACHMENT_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" \
-    "${HOST}/projects/${FIRST_PROJECT_ID}/attachments/${DRIVE_ID}/${ATTACHMENT_TYPE}/${FILE_NAME}") || (echo "❌ Failed attachments GET test" && exit 1)
-echo "Response: ${ATTACHMENT_RESPONSE}"
-echo "✅ GET attachments passed"
+echo "GET /projects/${FIRST_PROJECT_ID}/attachments/${AUDIO_DRIVE_ID}/${AUDIO_ATTACHMENT_TYPE}/${AUDIO_FILE_NAME}"
+AUDIO_ATTACHMENT_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/attachments/${AUDIO_DRIVE_ID}/${AUDIO_ATTACHMENT_TYPE}/${AUDIO_FILE_NAME}") || (echo "❌ Failed audio attachments GET test" && exit 1)
+echo "Response: ${AUDIO_ATTACHMENT_RESPONSE}"
+echo "✅ GET audio attachments passed"
 echo
 
+# Test POST /projects/:projectPublicId/whatsapp/attachments for image attachment using mediaId "506761729122033.jpg"
+MEDIA_ID_IMAGE="506761729122033.jpg"
+echo "POST /projects/${FIRST_PROJECT_ID}/whatsapp/attachments with image mediaId ${MEDIA_ID_IMAGE}"
+WHATSAPP_RESPONSE_IMAGE=$(curl -s -f -X POST \
+    -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{"mediaId": "'"${MEDIA_ID_IMAGE}"'"}' \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/whatsapp/attachments") || (echo "❌ Failed WhatsApp image attachments test" && exit 1)
+echo "Response: ${WHATSAPP_RESPONSE_IMAGE}"
+echo "✅ Image WhatsApp attachment added"
+echo
+
+# Extract attachment details from the image response for GET request
+IMAGE_DRIVE_ID=$(echo "${WHATSAPP_RESPONSE_IMAGE}" | jq -r '.driveId')
+IMAGE_ATTACHMENT_TYPE=$(echo "${WHATSAPP_RESPONSE_IMAGE}" | jq -r '.type')
+IMAGE_FILE_NAME=$(echo "${WHATSAPP_RESPONSE_IMAGE}" | jq -r '.name')
+
+echo "GET /projects/${FIRST_PROJECT_ID}/attachments/${IMAGE_DRIVE_ID}/${IMAGE_ATTACHMENT_TYPE}/${IMAGE_FILE_NAME}"
+IMAGE_ATTACHMENT_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${BEARER_TOKEN}" \
+    "${HOST}/projects/${FIRST_PROJECT_ID}/attachments/${IMAGE_DRIVE_ID}/${IMAGE_ATTACHMENT_TYPE}/${IMAGE_FILE_NAME}") || (echo "❌ Failed image attachments GET test" && exit 1)
+echo "Response: ${IMAGE_ATTACHMENT_RESPONSE}"
+echo "✅ GET image attachments passed"
+echo
+
+# Create observation with no attachments initially
 echo "PUT /projects/${FIRST_PROJECT_ID}/observation - create observation"
 OBSERVATION_CREATE_RESPONSE=$(curl -s -f -X PUT \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
@@ -96,22 +121,28 @@ echo "Created observation with versionId: ${OBSERVATION_VERSION_ID}"
 echo "✅ Observation creation passed"
 echo
 
-echo "PUT /projects/${FIRST_PROJECT_ID}/observation - update observation with attachment"
+# Update observation with both audio and image attachments
+echo "PUT /projects/${FIRST_PROJECT_ID}/observation - update observation with attachments"
 OBSERVATION_UPDATE_RESPONSE=$(curl -s -f -X PUT \
     -H "Authorization: Bearer ${BEARER_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{
           "attachments": [
             {
-              "driveDiscoveryId": "'"${DRIVE_ID}"'",
-              "type": "'"${ATTACHMENT_TYPE}"'",
-              "name": "'"${FILE_NAME}"'"
+              "driveDiscoveryId": "'"${AUDIO_DRIVE_ID}"'",
+              "type": "'"${AUDIO_ATTACHMENT_TYPE}"'",
+              "name": "'"${AUDIO_FILE_NAME}"'"
+            },
+            {
+              "driveDiscoveryId": "'"${IMAGE_DRIVE_ID}"'",
+              "type": "'"${IMAGE_ATTACHMENT_TYPE}"'",
+              "name": "'"${IMAGE_FILE_NAME}"'"
             }
           ]
         }' \
-    "${HOST}/projects/${FIRST_PROJECT_ID}/observation?versionId=${OBSERVATION_VERSION_ID}") || (echo "❌ Failed to update observation with attachment" && exit 1)
+    "${HOST}/projects/${FIRST_PROJECT_ID}/observation?versionId=${OBSERVATION_VERSION_ID}") || (echo "❌ Failed to update observation with attachments" && exit 1)
 echo "Response: ${OBSERVATION_UPDATE_RESPONSE}"
-echo "✅ Observation update with attachment passed"
+echo "✅ Observation update with attachments passed"
 echo
 
 
