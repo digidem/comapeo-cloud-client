@@ -98,6 +98,7 @@ export default async function magicLinkRoutes(fastify, { serverBearerToken }) {
         200: Type.Object({
           magicLinkToken: Type.String(),
           user: Type.Any(),
+          projectId: Type.String(),
         }),
         '4xx': schemas.errorResponse,
       },
@@ -140,7 +141,21 @@ export default async function magicLinkRoutes(fastify, { serverBearerToken }) {
         `Magic link token invalidated successfully: ${magicToken}`,
       )
 
-      return { magicLinkToken: magicToken, user: associatedUser }
+      const projects = await fastify.comapeo.listProjects()
+      const project = projects.find(
+        (p) => p.name === associatedUser.projectName,
+      )
+      if (!project) {
+        fastify.log.error(
+          `No project found for user with projectName: ${associatedUser.projectName}`,
+        )
+        throw errors.notFoundError(
+          `No project found for user with projectName: ${associatedUser.projectName}`,
+        )
+      }
+      const projectId = project.projectId
+
+      return { magicLinkToken: magicToken, user: associatedUser, projectId }
     },
   })
 }

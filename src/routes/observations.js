@@ -155,7 +155,9 @@ export default async function observationRoutes(
         category: Type.Optional(Type.String()),
         locale: Type.Optional(Type.String()),
       }),
-      body: Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
+      body: Type.Optional(
+        Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
+      ),
       response: {
         200: Type.Object({
           versionId: Type.String(),
@@ -208,8 +210,7 @@ export default async function observationRoutes(
 
       if (effectiveVersionId) {
         // Update existing observation
-        const body = /** @type {Record<string, any>} */ (req.body)
-
+        const body = /** @type {Record<string, any>} */ (req.body || {})
         // Explicitly reject lat/lon in updates
         if ('lat' in body || 'lon' in body) {
           throw errors.badRequestError(
@@ -244,8 +245,7 @@ export default async function observationRoutes(
       }
 
       // Create new observation
-      const body = /** @type {Record<string, any>} */ (req.body)
-
+      const body = /** @type {Record<string, any>} */ (req.body || {})
       if (typeof body.lat !== 'number' || typeof body.lon !== 'number') {
         throw errors.badRequestError(
           'lat and lon are required for new observations',
