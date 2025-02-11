@@ -60,9 +60,13 @@ export default async function authRoutes(fastify, opts) {
 
       // Check if coordinator already exists
       const existingCoordinator = fastify.db.findCoordinatorByPhone(phoneNumber)
-      if (existingCoordinator?.token) {
-        fastify.log.warn(`Coordinator already exists for phone: ${phoneNumber}`)
-        throw errors.conflictError('Phone number already registered')
+      if (existingCoordinator) {
+        fastify.log.info(
+          `Coordinator exists with project: ${existingCoordinator.projectName}, will be removed`,
+        )
+        // Delete existing coordinator
+        fastify.db.deleteCoordinatorByPhone(phoneNumber)
+        fastify.log.info(`Deleted existing coordinator: ${phoneNumber}`)
       }
 
       // Check if project name already exists
