@@ -63,6 +63,7 @@
   },
   "dependencies": {
     "@comapeo/core": "^2.3.1",
+    "@fastify/cors": "^8.5.0",
     "@fastify/sensible": "^5.6.0",
     "@fastify/swagger": "^8.15.0",
     "@fastify/swagger-ui": "^2.1.0",

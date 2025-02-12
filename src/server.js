@@ -1,3 +1,4 @@
+import cors from '@fastify/cors'
 import { Type } from '@sinclair/typebox'
 import envSchema from 'env-schema'
 import createFastify from 'fastify'
@@ -79,6 +80,10 @@ if (!rootKey || rootKey.length !== 16) {
 const fastify = createFastify({
   logger: true,
   trustProxy: true,
+})
+
+await fastify.register(cors, {
+  // put your options here
 })
 
 // Register Swagger
