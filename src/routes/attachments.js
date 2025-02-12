@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox'
+import sharp from 'sharp'
 
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -173,12 +174,33 @@ export default async function attachmentsRoutes(
       const mimeType = mimeTypes[extensionLower] || 'application/octet-stream'
 
       const filePath = join(mediaFolder, mediaId)
+      const fileThumbnailPath = join(mediaFolder, `thumbnail_${mediaId}`)
+
+      // Write original file
       await writeFile(filePath, buffer)
+
+      // If the media is an image, compress it to create a thumbnail
+      // THUMBNAIL_SIZE = 400; THUMBNAIL_QUALITY = 30;
+      let thumbnailPath = filePath
+      if (mimeType.startsWith('image/')) {
+        try {
+          await sharp(buffer)
+            .resize({ width: 400, fit: 'inside' })
+            .jpeg({ quality: 30 })
+            .toFile(fileThumbnailPath)
+          thumbnailPath = fileThumbnailPath
+        } catch (error) {
+          console.error('Error generating thumbnail:', error)
+          // Fallback: use original image if thumbnail generation fails
+          thumbnailPath = filePath
+        }
+      }
 
       const project = await fastify.comapeo.getProject(projectPublicId)
       const blobCreationResponse = await project.$blobs.create(
         {
           original: new URL(`file://${filePath}`).pathname,
+          thumbnail: new URL(`file://${thumbnailPath}`).pathname,
         },
         {
           mimeType,
