@@ -1,8 +1,6 @@
 import { Type } from '@sinclair/typebox'
 import slugify from '@sindresorhus/slugify'
 
-import crypto from 'node:crypto'
-
 import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
 import { SUPPORTED_ATTACHMENT_TYPES } from './constants.js'
@@ -246,7 +244,7 @@ export default async function observationRoutes(
           ...(body.attachments || []).map(
             (/** @type {Attachment} */ attachment) => ({
               ...attachment,
-              hash: crypto.randomBytes(32).toString('hex'),
+              hash: '',
             }),
           ),
         ]
@@ -288,7 +286,7 @@ export default async function observationRoutes(
         attachments: (body.attachments || []).map(
           (/** @type {Attachment} */ attachment) => ({
             ...attachment,
-            hash: crypto.randomBytes(32).toString('hex'),
+            hash: '',
           }),
         ),
         presetRef: preset
