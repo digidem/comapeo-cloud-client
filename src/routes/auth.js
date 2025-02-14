@@ -58,6 +58,9 @@ export default async function authRoutes(fastify, opts) {
         `Attempting coordinator registration for phone: ${phoneNumber}`,
       )
 
+      // Decode project name
+      const decodedProjectName = decodeURIComponent(projectName)
+
       // Check if coordinator already exists
       const existingCoordinator = fastify.db.findCoordinatorByPhone(phoneNumber)
       if (existingCoordinator) {
@@ -71,28 +74,32 @@ export default async function authRoutes(fastify, opts) {
 
       // Check if project name already exists
       const existingProjectCoordinator =
-        fastify.db.findCoordinatorByProject(projectName)
+        fastify.db.findCoordinatorByProject(decodedProjectName)
       if (existingProjectCoordinator) {
-        fastify.log.warn(`Project name already exists: ${projectName}`)
+        fastify.log.warn(`Project name already exists: ${decodedProjectName}`)
         throw errors.conflictError('Project name already exists')
       }
 
       const projects = await fastify.comapeo.listProjects()
-      const existingProject = projects.find((p) => p.name === projectName)
+      const existingProject = projects.find(
+        (p) => p.name === decodedProjectName,
+      )
       if (existingProject) {
-        fastify.log.warn(`Project name already exists: ${projectName}`)
+        fastify.log.warn(`Project name already exists: ${decodedProjectName}`)
         throw errors.conflictError('Project name already exists')
       }
 
       // Create new coordinator
       const coordinator = {
         phoneNumber,
-        projectName,
+        projectName: decodedProjectName,
         createdAt: new Date().toISOString(),
       }
 
       fastify.db.saveCoordinator(coordinator)
-      fastify.log.info(`Registered new coordinator for project: ${projectName}`)
+      fastify.log.info(
+        `Registered new coordinator for project: ${decodedProjectName}`,
+      )
 
       return {
         data: {
@@ -102,6 +109,7 @@ export default async function authRoutes(fastify, opts) {
       }
     },
   )
+
   // DELETE /auth/unregister
   fastify.delete(
     '/auth/unregister',
@@ -149,6 +157,7 @@ export default async function authRoutes(fastify, opts) {
       }
     },
   )
+
   // POST /auth/coordinator
   fastify.post(
     '/auth/coordinator',
@@ -197,12 +206,15 @@ export default async function authRoutes(fastify, opts) {
       }
       fastify.log.info('Coordinator project name verified')
 
+      // Decode project name
+      const decodedProjectName = decodeURIComponent(coordinator.projectName)
+
       // Verify project exists
       const projects = await fastify.comapeo.listProjects()
       fastify.log.debug(`Found ${projects.length} total projects`)
-      const project = projects.find((p) => p.name === coordinator.projectName)
+      const project = projects.find((p) => p.name === decodedProjectName)
       if (!project) {
-        fastify.log.error(`Project not found: ${coordinator.projectName}`)
+        fastify.log.error(`Project not found: ${decodedProjectName}`)
         throw errors.projectNotFoundError()
       }
       fastify.log.info(`Found matching project: ${project.name}`)
