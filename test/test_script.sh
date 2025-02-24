@@ -176,7 +176,7 @@ RESPONSE=$(curl -s -f -X PUT \
             "category": "test"
         }
     }' \
-    "${HOST}/projects/${PROJECT_ID}/observation?versionId=${VERSION_ID}") || (echo "❌ Failed" && exit 1)
+    "${HOST}/projects/${PROJECT_ID}/observation?versionId=${VERSION_ID}&docId=${DOC_ID}") || (echo "❌ Failed" && exit 1)
 echo "Response: ${RESPONSE}"
 echo "✅ Passed"
 echo
