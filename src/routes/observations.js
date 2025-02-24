@@ -64,6 +64,7 @@ export default async function observationRoutes(
 
       return {
         data: {
+          versionId: observation.versionId,
           docId: observation.docId,
           createdAt: observation.createdAt,
           updatedAt: observation.updatedAt,
@@ -118,6 +119,7 @@ export default async function observationRoutes(
       return {
         data: (await project.observation.getMany({ includeDeleted: true })).map(
           (obs) => ({
+            versionId: obs.versionId,
             docId: obs.docId,
             createdAt: obs.createdAt,
             updatedAt: obs.updatedAt,
