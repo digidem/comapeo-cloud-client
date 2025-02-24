@@ -4,6 +4,7 @@ import * as errors from '../errors.js'
 import alertsRoutes from './alerts.js'
 import attachmentRoutes from './attachments.js'
 import authRoutes from './auth.js'
+import magicLinkRoutes from './magic-link.js'
 import observationsRoutes from './observations.js'
 import projectsRoutes from './projects.js'
 import rootRoutes from './root.js'
@@ -65,12 +66,10 @@ export default async function routes(
   fastify.register(serverInfoRoutes, commonOpts)
   fastify.register(projectsRoutes, commonOpts)
   // For plugins that require only a subset of options, cast inline
-  fastify.register(
-    observationsRoutes,
-    /** @type {any} */ ({ serverBearerToken }),
-  )
+  fastify.register(observationsRoutes, commonOpts)
   fastify.register(alertsRoutes, commonOpts)
   fastify.register(syncRoutes, commonOpts)
   fastify.register(authRoutes, commonOpts)
   fastify.register(attachmentRoutes, commonOpts)
+  fastify.register(magicLinkRoutes, commonOpts)
 }

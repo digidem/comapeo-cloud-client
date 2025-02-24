@@ -102,6 +102,7 @@ export const observationToUpdate = Type.Object({
 })
 
 export const observationResult = Type.Object({
+  versionId: Type.String(),
   docId: Type.String(),
   createdAt: dateTimeString,
   updatedAt: dateTimeString,

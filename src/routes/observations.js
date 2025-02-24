@@ -64,6 +64,7 @@ export default async function observationRoutes(
 
       return {
         data: {
+          versionId: observation.versionId,
           docId: observation.docId,
           createdAt: observation.createdAt,
           updatedAt: observation.updatedAt,
@@ -118,6 +119,7 @@ export default async function observationRoutes(
       return {
         data: (await project.observation.getMany({ includeDeleted: true })).map(
           (obs) => ({
+            versionId: obs.versionId,
             docId: obs.docId,
             createdAt: obs.createdAt,
             updatedAt: obs.updatedAt,
@@ -156,7 +158,9 @@ export default async function observationRoutes(
         category: Type.Optional(Type.String()),
         locale: Type.Optional(Type.String()),
       }),
-      body: Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
+      body: Type.Optional(
+        Type.Union([schemas.observationToAdd, schemas.observationToUpdate]),
+      ),
       response: {
         200: Type.Object({
           versionId: Type.String(),
@@ -269,8 +273,7 @@ export default async function observationRoutes(
       }
 
       // Create new observation
-      const body = /** @type {Record<string, any>} */ (req.body)
-
+      const body = /** @type {Record<string, any>} */ (req.body || {})
       if (typeof body.lat !== 'number' || typeof body.lon !== 'number') {
         throw errors.badRequestError(
           'lat and lon are required for new observations',
