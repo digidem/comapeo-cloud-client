@@ -6,9 +6,11 @@ import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
 import { verifyProjectAuth, BEARER_SPACE_LENGTH } from './utils.js'
 
+// Calculate rate limit time in milliseconds from environment variable or use default (1 hour)
 const rateLimitTime =
-  Number(process.env.MAGIC_LINK_RATE_LIMIT) * 1000 || 60 * 60 * 1000
-const RATE_LIMIT = Date.now() - rateLimitTime
+  (Number(process.env.MAGIC_LINK_RATE_LIMIT) || 60 * 60) * 1000
+// Define the timestamp threshold for rate limiting (current time minus rate limit duration)
+const RATE_LIMIT_THRESHOLD = Date.now() - rateLimitTime
 
 /** @typedef {import('fastify').FastifyInstance} FastifyInstance */
 /** @typedef {import('fastify').FastifyPluginAsync} FastifyPluginAsync */
@@ -65,10 +67,10 @@ export default async function magicLinkRoutes(fastify, { serverBearerToken }) {
       const token = userToken.slice(BEARER_SPACE_LENGTH)
       // Ensure the user hasn't generated a magic link in the past hour
       const existingLinks = fastify.db.getUserMagicLinks(token)
-      const oneHourAgo = RATE_LIMIT
+      const threshold = RATE_LIMIT_THRESHOLD
       if (
         existingLinks.some(
-          (link) => new Date(link.createdAt).getTime() > oneHourAgo,
+          (link) => new Date(link.createdAt).getTime() > threshold,
         )
       ) {
         fastify.log.error(
