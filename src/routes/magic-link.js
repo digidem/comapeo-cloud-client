@@ -6,7 +6,9 @@ import * as errors from '../errors.js'
 import * as schemas from '../schemas.js'
 import { verifyProjectAuth, BEARER_SPACE_LENGTH } from './utils.js'
 
-const RATE_LIMIT = Date.now() - 60 * 60 * 1000 // 1 hour
+const rateLimitTime =
+  Number(process.env.MAGIC_LINK_RATE_LIMIT) * 1000 || 60 * 60 * 1000
+const RATE_LIMIT = Date.now() - rateLimitTime
 
 /** @typedef {import('fastify').FastifyInstance} FastifyInstance */
 /** @typedef {import('fastify').FastifyPluginAsync} FastifyPluginAsync */
