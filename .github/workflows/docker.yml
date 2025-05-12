@@ -53,22 +53,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image for main branch
-        if: github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          context: .
-          push: true
+          images: communityfirst/comapeo-cloud
           tags: |
-            communityfirst/comape-cloud-client:latest
-            communityfirst/comape-cloud-client:${{ github.sha }}
+            type=raw,value=${{ github.sha }}
+            type=raw,value=${{ github.ref_name }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build and push Docker image for other branches
-        if: github.ref != 'refs/heads/main'
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            communityfirst/comape-cloud-client:${{ github.sha }}
-            communityfirst/comape-cloud-client:${{ github.ref_name }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
