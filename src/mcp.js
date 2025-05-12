@@ -3,6 +3,9 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
 import { Sessions } from 'fastify-mcp'
 import createFastifyPlugin from 'fastify-plugin'
 
+/** @import { FastifyPluginAsync, FastifyRequest } from "fastify" */
+/** @import {MapeoManager} from "@comapeo/core" */
+
 /**
  * @typedef {object} mcpPluginOptions
  */
@@ -50,6 +53,9 @@ export default createFastifyPlugin(mcpPluginCallback, {
   name: 'comapeo-mcp',
 })
 
+/**
+ * @param {MapeoManager} manager
+ */
 export function createServer(manager) {
   const mcpServer = new McpServer({
     name: 'CoMapeo Cloud Project',
@@ -66,7 +72,9 @@ export function createServer(manager) {
     // Throw if none
     if (!projects.length) throw new Error('No projects exist on this instance')
     // Get first
-    return projects[0]
+    // @ts-ignore
+    const { projectId } = projects[0]
+    return manager.getProject(projectId)
   }
 
   // TODO: Search parameters (tags/presets?)
@@ -83,6 +91,9 @@ export function createServer(manager) {
           content: [{ type: 'text', text }],
         }
       } catch (e) {
+        if (!(e instanceof Error)) {
+          throw new Error('This should never happen, typescript!')
+        }
         return {
           content: [
             {
@@ -99,6 +110,9 @@ export function createServer(manager) {
   return mcpServer.server
 }
 
+/**
+ * @param {FastifyRequest} req
+ */
 function extractSessionId(req) {
   if (typeof req.query !== 'object' || req.query === null) {
     return null
