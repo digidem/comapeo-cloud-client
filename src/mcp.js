@@ -1,6 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
-import { Sessions } from 'fastify-mcp'
+import { streamableHttp } from 'fastify-mcp'
 import createFastifyPlugin from 'fastify-plugin'
 
 /** @import { FastifyPluginAsync, FastifyRequest } from "fastify" */
@@ -13,39 +12,10 @@ import createFastifyPlugin from 'fastify-plugin'
 /** @type {FastifyPluginAsync<mcpPluginOptions>} */
 const mcpPluginCallback = async (fastify) => {
   const manager = fastify.comapeo
-  const server = createServer(manager)
-  const sessions = new Sessions()
-  const sseEndpoint = '/sse'
-  const messagesEndpoint = '/messages'
-
-  fastify.get(sseEndpoint, async (_, reply) => {
-    const transport = new SSEServerTransport(messagesEndpoint, reply.raw)
-    const sessionId = transport.sessionId
-
-    sessions.add(sessionId, transport)
-
-    reply.raw.on('close', () => {
-      sessions.remove(sessionId)
-    })
-
-    fastify.log.info('Starting new session', { sessionId })
-    await server.connect(transport)
-  })
-
-  fastify.post(messagesEndpoint, async (req, reply) => {
-    const sessionId = extractSessionId(req)
-    if (!sessionId) {
-      reply.status(400).send({ error: 'Invalid session' })
-      return
-    }
-
-    const transport = sessions.get(sessionId)
-    if (!transport) {
-      reply.status(400).send({ error: 'Invalid session' })
-      return
-    }
-
-    await transport.handlePostMessage(req.raw, reply.raw, req.body)
+  await streamableHttp(fastify, {
+    stateful: false,
+    mcpEndpoint: '/mcp',
+    createServer: () => createServer(manager),
   })
 }
 
@@ -108,24 +78,4 @@ export function createServer(manager) {
   // mcpServer.resource("...");
 
   return mcpServer.server
-}
-
-/**
- * @param {FastifyRequest} req
- */
-function extractSessionId(req) {
-  if (typeof req.query !== 'object' || req.query === null) {
-    return null
-  }
-
-  if ('sessionId' in req.query === false) {
-    return null
-  }
-
-  const sessionId = req.query.sessionId
-  if (typeof sessionId !== 'string') {
-    return null
-  }
-
-  return sessionId
 }
