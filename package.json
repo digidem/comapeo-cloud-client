@@ -1,6 +1,6 @@
 {
   "name": "@comapeo/cloud-client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "self-hosted cloud server for CoMapeo",
   "main": "src/main.js",
   "type": "module",
@@ -33,14 +33,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/digidem/comapeo-cloud.git"
+    "url": "git+https://github.com/digidem/comapeo-cloud-client.git"
   },
   "author": "Awana Digital",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/digidem/comapeo-cloud/issues"
+    "url": "https://github.com/digidem/comapeo-cloud-client/issues"
   },
-  "homepage": "https://github.com/digidem/comapeo-cloud#readme",
+  "homepage": "https://github.com/digidem/comapeo-cloud-client#readme",
   "devDependencies": {
     "@comapeo/schema": "^1.4.1",
     "@eslint/js": "^9.19.0",
@@ -69,14 +69,17 @@
     "@fastify/swagger-ui": "^2.1.0",
     "@fastify/websocket": "^10.0.1",
     "@mapeo/crypto": "^1.0.0-alpha.10",
+    "@modelcontextprotocol/sdk": "^1.11.2",
     "@sinclair/typebox": "^0.34.15",
     "@sindresorhus/slugify": "^2.2.1",
     "@types/qrcode": "^1.5.5",
     "env-schema": "^6.0.1",
     "fastify": "^4.29.0",
+    "fastify-mcp": "^2.0.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.33.5",
     "string-timing-safe-equal": "^0.1.0",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "zod": "^3.24.4"
   }
 }

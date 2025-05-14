@@ -6,6 +6,7 @@ import allowedHostsPlugin from './allowed-hosts-plugin.js'
 import baseUrlPlugin from './base-url-plugin.js'
 import comapeoPlugin from './comapeo-plugin.js'
 import dbPlugin from './db.js'
+import mcpPlugin from './mcp.js'
 import routes from './routes/index.js'
 
 /** @import { FastifyPluginAsync } from 'fastify' */
@@ -45,6 +46,7 @@ async function comapeoServer(
   await fastify.register(allowedHostsPlugin, { allowedHosts })
   await fastify.register(baseUrlPlugin)
   await fastify.register(comapeoPlugin, { ...comapeoPluginOpts, dbFolder })
+  await fastify.register(mcpPlugin)
   await fastify.register(routes, {
     serverBearerToken,
     serverName,
