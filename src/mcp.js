@@ -12,6 +12,8 @@ import createFastifyPlugin from 'fastify-plugin'
 /** @type {FastifyPluginAsync<mcpPluginOptions>} */
 const mcpPluginCallback = async (fastify) => {
   const manager = fastify.comapeo
+
+  // @ts-expect-error
   await streamableHttp(fastify, {
     stateful: false,
     mcpEndpoint: '/mcp',
